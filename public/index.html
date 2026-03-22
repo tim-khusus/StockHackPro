@@ -109,8 +109,18 @@
                 loading.classList.add('hidden');
                 resultArea.classList.remove('hidden');
             } catch (err) {
-                alert('Koneksi Terputus atau Ticker Salah');
+                // FIX #4: Tampilkan error di UI bukan hanya alert
                 loading.classList.add('hidden');
+                document.getElementById('uiPrice').innerText = `Rp 0`;
+                document.getElementById('uiChange').innerText = ``;
+                document.getElementById('uiFairValue').innerText = `Rp 0`;
+                document.getElementById('uiVolRatio').innerText = `0x`;
+                document.getElementById('uiSummary').innerText = `❌ Error: ${err.message || 'Koneksi terputus atau ticker salah.'}`;
+                document.getElementById('uiSupport').innerText = `Rp 0`;
+                document.getElementById('uiResistance').innerText = `Rp 0`;
+                document.getElementById('uiSignal').innerText = `Signal: ERR`;
+                document.getElementById('uiPhase').innerText = `Phase: N/A`;
+                resultArea.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
             }

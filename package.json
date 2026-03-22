@@ -1,13 +1,11 @@
 {
   "name": "idx-pro-terminal",
   "version": "3.0.0",
-  "description": "Terminal Analisis Saham IDX berbasis AI",
-  "main": "api/analyze.js",
+  "type": "module",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0"
   },
   "engines": {
     "node": "20.x"
-  },
-  "private": true
+  }
 }

@@ -25,19 +25,16 @@
         <!-- Main Dashboard -->
         <div id="resultArea" class="hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Card 1: Price Info -->
                 <div class="glass p-6 rounded-2xl glow-blue">
                     <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest">Market Price</p>
                     <div class="text-3xl font-bold" id="uiPrice">Rp 0</div>
                     <div class="text-sm font-semibold mt-1" id="uiChange">+0.00%</div>
                 </div>
-                <!-- Card 2: Fair Value Gauge -->
                 <div class="glass p-6 rounded-2xl">
                     <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest">AI Fair Value</p>
                     <div class="text-3xl font-bold text-emerald-400" id="uiFairValue">Rp 0</div>
                     <p class="text-xs text-slate-500 mt-1 uppercase" id="uiSignal">Signal: -</p>
                 </div>
-                <!-- Card 3: Volumetry -->
                 <div class="glass p-6 rounded-2xl">
                     <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest">Volume Ratio</p>
                     <div class="text-3xl font-bold text-blue-400" id="uiVolRatio">0.0x</div>
@@ -45,7 +42,6 @@
                 </div>
             </div>
 
-            <!-- Technical Analysis Box -->
             <div class="glass p-8 rounded-2xl">
                 <h3 class="text-blue-400 font-mono mb-4 flex items-center">
                     <span class="mr-2">●</span> AI STRATEGY REPORT
@@ -72,6 +68,8 @@
     </div>
 
     <script>
+        const formatIDR = (n) => (n || 0).toLocaleString('id-ID');
+
         async function analyzeStock() {
             const ticker = document.getElementById('tickerInput').value.toUpperCase();
             if (!ticker) return alert('Masukkan Ticker!');
@@ -80,7 +78,6 @@
             const resultArea = document.getElementById('resultArea');
             const loading = document.getElementById('loading');
 
-            // Toggle UI
             btn.disabled = true;
             resultArea.classList.add('hidden');
             loading.classList.remove('hidden');
@@ -94,27 +91,35 @@
 
                 const data = await response.json();
 
-                // Update UI dengan data dari Claude
-                document.getElementById('uiPrice').innerText = `Rp ${data.price.toLocaleString()}`;
-                document.getElementById('uiChange').innerText = `${data.change > 0 ? '▲' : '▼'} ${data.change}%`;
-                document.getElementById('uiChange').className = data.change > 0 ? 'text-emerald-400' : 'text-rose-400';
-                document.getElementById('uiFairValue').innerText = `Rp ${data.fair_value.toLocaleString()}`;
-                document.getElementById('uiVolRatio').innerText = `${data.vol_ratio}x`;
-                document.getElementById('uiSummary').innerText = data.summary;
-                document.getElementById('uiSupport').innerText = `Rp ${data.support.toLocaleString()}`;
-                document.getElementById('uiResistance').innerText = `Rp ${data.resistance.toLocaleString()}`;
-                document.getElementById('uiSignal').innerText = `Signal: ${data.signal}`;
-                document.getElementById('uiPhase').innerText = `Phase: ${data.phase}`;
+                // Update UI
+                document.getElementById('uiPrice').innerText = `Rp ${formatIDR(data.price)}`;
+                const change = data.change || 0;
+                const changeEl = document.getElementById('uiChange');
+                changeEl.innerText = `${change > 0 ? '▲' : '▼'} ${change}%`;
+                changeEl.className = `text-sm font-semibold mt-1 ${change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+                
+                document.getElementById('uiFairValue').innerText = `Rp ${formatIDR(data.fair_value)}`;
+                document.getElementById('uiVolRatio').innerText = `${data.vol_ratio || 0}x`;
+                document.getElementById('uiSummary').innerText = data.summary || '-';
+                document.getElementById('uiSupport').innerText = `Rp ${formatIDR(data.support)}`;
+                document.getElementById('uiResistance').innerText = `Rp ${formatIDR(data.resistance)}`;
+                document.getElementById('uiSignal').innerText = `Signal: ${data.signal || '-'}`;
+                document.getElementById('uiPhase').innerText = `Phase: ${data.phase || '-'}`;
 
                 loading.classList.add('hidden');
                 resultArea.classList.remove('hidden');
             } catch (err) {
-                alert('Error: ' + err.message);
+                alert('Koneksi Terputus atau Ticker Salah');
                 loading.classList.add('hidden');
             } finally {
                 btn.disabled = false;
             }
         }
+
+        // Tekan Enter untuk Analyze
+        document.getElementById('tickerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') analyzeStock();
+        });
     </script>
 </body>
 </html>

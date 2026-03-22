@@ -1,46 +1,49 @@
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-
   const { ticker } = req.body;
   const apiKey = process.env.GEMINI_API_KEY;
 
-  if (!apiKey) return res.status(500).json({ error: 'API Key Belum Terpasang di Vercel' });
+  if (!apiKey) return res.status(500).json({ error: "API Key Hilang di Vercel!" });
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Analisis mendalam saham IDX: ${ticker}. Berikan hasil HANYA dalam format JSON murni tanpa kata-kata lain dan tanpa markdown: 
-            {"price": 1000, "change": 2.5, "signal": "BUY", "fair_value": 1200, "vol_ratio": 1.5, "summary": "Tulis analisis singkat di sini", "support": 950, "resistance": 1100, "phase": "Accumulation"}`
-          }]
-        }]
+        contents: [{ 
+          parts: [{ text: `Analisis teknikal saham IDX: ${ticker}. Berikan JSON murni: {"price":0, "change":0, "signal":"HOLD", "fair_value":0, "vol_ratio":0, "summary":"...", "support":0, "resistance":0, "phase":"..."}` }]
+        }],
+        // PENGATURAN AGAR TIDAK DIBLOKIR GOOGLE
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ],
+        generationConfig: { response_mime_type: "application/json" }
       })
     });
 
     const data = await response.json();
-    
-    if (!data.candidates || !data.candidates[0].content) {
-      throw new Error("Respon AI Kosong");
+
+    // Cek apakah ada pesan error dari Google (misal: API Key salah)
+    if (data.error) {
+      throw new Error(`Google API Error: ${data.error.message}`);
     }
 
-    const rawText = data.candidates[0].content.parts[0].text;
-    
-    // Pembersihan teks agar JSON tidak rusak oleh 'curhatan' AI
-    const jsonStart = rawText.indexOf('{');
-    const jsonEnd = rawText.lastIndexOf('}') + 1;
-    const cleanJson = rawText.substring(jsonStart, jsonEnd);
-    
-    res.status(200).json(JSON.parse(cleanJson));
+    if (!data.candidates || !data.candidates[0].content) {
+      console.log("Raw Response:", JSON.stringify(data)); // Intip isi aslinya di log
+      throw new Error("Google memblokir respon ini (Safety Filter)");
+    }
+
+    const result = JSON.parse(data.candidates[0].content.parts[0].text);
+    res.status(200).json(result);
 
   } catch (error) {
-    console.error(error);
-    // Kirim data dummy jika gagal agar UI tidak crash
+    console.error("INVESTIGASI GAGAL:", error.message);
     res.status(200).json({
-      price: 0, change: 0, signal: "ERROR", fair_value: 0, vol_ratio: 0, 
-      summary: "Gagal memproses data. Coba lagi nanti.", support: 0, resistance: 0, phase: "N/A"
+      price: 0, change: 0, signal: "ERR", fair_value: 0, vol_ratio: 0, 
+      summary: `Penyebab: ${error.message}. Pastikan GEMINI_API_KEY sudah benar di Vercel.`,
+      support: 0, resistance: 0, phase: "N/A"
     });
   }
 }

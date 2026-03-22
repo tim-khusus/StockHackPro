@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/api/analyze",
+      "destination": "/api/analyze.js"
+    }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
+}

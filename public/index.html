@@ -347,83 +347,90 @@ async function fetchPrice(ticker){
 // ═══════════════════════════════════════════════════════
 async function fetchAllAnalysis(ticker, p, dpsFromChart){
   const pos52 = (p.week52_high && p.week52_low)
-    ? (((p.price-p.week52_low)/(p.week52_high-p.week52_low))*100).toFixed(0)+'%' : 'N/A';
+    ? (((p.price - p.week52_low) / (p.week52_high - p.week52_low)) * 100).toFixed(0) + '%'
+    : 'N/A';
   const rsiEst = (p.week52_high && p.week52_low)
-    ? Math.round(30+(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*50)) : 50;
-  const sessStr = (p.sessions||[]).slice(0,10).map(s=>
-    `${s.session}(${s.date}):v=${(s.vol/1e6).toFixed(1)}M,p=${s.price},c=${s.change_pct}%`
+    ? Math.round(30 + (((p.price - p.week52_low) / (p.week52_high - p.week52_low)) * 50))
+    : 50;
+  const sessStr = (p.sessions || []).slice(0, 10).map(s =>
+    s.session + '(' + s.date + '):v=' + (s.vol/1e6).toFixed(1) + 'M,p=' + s.price + ',c=' + s.change_pct + '%'
   ).join(' ');
+  const dpsLine = dpsFromChart ? 'DPS real dari chart: Rp ' + dpsFromChart : '';
+  const dpsVal  = dpsFromChart ? dpsFromChart : 'null';
 
-  const txt = await callClaude([{role:'user', content:
-`Search IDX Indonesia data for ${ticker}.JK:
-1. "${ticker} EPS book value ROE laporan keuangan 2024"
-2. "${ticker} foreign net buy sell IDX asing 2025"
+  const prompt =
+    'Search IDX data for ' + ticker + '.JK:\n' +
+    '1. "' + ticker + ' EPS book value ROE laporan keuangan 2024"\n' +
+    '2. "' + ticker + ' foreign net buy sell IDX asing 2025"\n\n' +
+    'Data REAL Yahoo Finance:\n' +
+    'Harga: Rp ' + p.price + ' | Chg: ' + p.change_pct + '% | Vol: ' + (p.volume/1e6).toFixed(1) + 'M | Avg30D: ' + ((p.avg_volume||0)/1e6).toFixed(1) + 'M\n' +
+    '52W: Rp ' + p.week52_low + '-' + p.week52_high + ' | Pos52W: ' + pos52 + ' | RSIaprx: ' + rsiEst + '\n' +
+    'Historis REAL: ' + sessStr + '\n' +
+    (dpsLine ? dpsLine + '\n' : '') +
+    '\nPENTING: EPS dan Book Value dalam Rupiah per saham. Contoh BBCA: EPS ~523, BV ~3241.\n' +
+    'Semua nilai numerik harus angka (bukan string). Isi berdasarkan data NYATA dari pencarian.\n\n' +
+    'Return ONLY valid JSON, no markdown:\n' +
+    '{"f":{"eps_ttm":null,"eps_growth_rate":null,"book_value_per_share":null,"dps":' + dpsVal + ',"dividend_yield":null,"roe":null,"roa":null,"net_margin":null,"debt_to_equity":null,"current_ratio":null,"pe_ratio":null,"pb_ratio":null,"beta":null,"cost_of_equity":null},' +
+    '"bm":{"ff_30d":null,"ff_trend":"neutral","foreign_own_pct":null,"bb":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"bs":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"broker_real":false,"buyer_type":"unknown","score":50,"phase":"neutral","wyckoff":null,"wyckoff_desc":null,"inst_sig":"neutral","unusual_vol":false,"unusual_desc":null,"pv_div":false,"div_type":"none","vwap":"at_vwap","adl":"neutral","vol_trend":"stable","confidence":"low","summary":""},' +
+    '"a":{"keputusan":"HOLD","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"","Posisi 52W":"","Momentum":"","Volume":"","Support":"Rp ' + p.week52_low + '","Resistance":"Rp ' + p.week52_high + '","Tren":""},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}}' +
+    '\nIsi semua field null dengan data real. Analisa berdasarkan fakta.';
 
-Data REAL Yahoo Finance:
-Harga: Rp ${p.price} | Chg: ${p.change_pct}% | Vol: ${(p.volume/1e6).toFixed(1)}M | Avg30D: ${((p.avg_volume||0)/1e6).toFixed(1)}M
-52W: Rp ${fmt(p.week52_low)}–${fmt(p.week52_high)} | Pos: ${pos52} | RSI≈${rsiEst}
-Sesi historis REAL: ${sessStr}
-${dpsFromChart?`DPS dari chart events: Rp ${dpsFromChart}`:''}
-
-Return ONE JSON object dengan key "f", "bm", "a" (no markdown):
-{"f":{"eps_ttm":<Rp/saham>,"eps_growth_rate":<% >,"book_value_per_share":<Rp/saham>,"dps":${dpsFromChart||'<Rp>'},"dividend_yield":<% >,"roe":<% >,"roa":<% >,"net_margin":<% >,"debt_to_equity":<x>,"current_ratio":<x>,"pe_ratio":<x>,"pb_ratio":<x>,"beta":<x>,"cost_of_equity":<% >},"bm":{"ff_30d":<bn IDR>,"ff_trend":"net_buy"|"net_sell"|"neutral"|"unknown","foreign_own_pct":<% >,"bb":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"bs":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"broker_real":<bool>,"buyer_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","score":<0-100>,"phase":"accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral","wyckoff":<str|null>,"wyckoff_desc":<str|null>,"inst_sig":"accumulation"|"distribution"|"neutral","unusual_vol":<bool>,"unusual_desc":<str|null>,"pv_div":<bool>,"div_type":"bullish_divergence"|"bearish_divergence"|"none","vwap":"above_vwap"|"below_vwap"|"at_vwap","adl":"positive"|"negative"|"neutral","vol_trend":"increasing"|"decreasing"|"stable","confidence":"high"|"medium"|"low","summary":"<3 kalimat: broker, foreign flow, saran>"},"a":{"keputusan":"BUY"|"SELL"|"HOLD","confidence":<60-95>,"target_harga":"Rp <n>","stop_loss":"Rp <n>","potensi_gain":"<+X%>","risk_level":<1-10>,"teknikal":{"RSI":"<i>","Posisi 52W":"<i>","Momentum":"<i>","Volume":"<i>","Support":"Rp <n>","Resistance":"Rp <n>","Tren":"<i>"},"sentimen":"Bullish"|"Bearish"|"Netral","katalis":["<k1>","<k2>","<k3>"],"risiko":["<r1>","<r2>"],"analisa":"<3 kalimat: harga Rp ${p.price}, harga wajar, bandar, target, stop loss>"}}`
-  }], true, 1600);
-
+  const txt = await callClaude([{role:'user', content: prompt}], true, 1600);
   const d = parseJSON(txt);
   if (!d.f || !d.bm || !d.a) throw new Error('Respons tidak lengkap, coba lagi');
 
-  // Post-process fundamental
+  // Paksa semua ke number
+  const nn = (v) => { const n = parseFloat(v); return isNaN(n) ? null : n; };
   const f = d.f;
-  if(dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
-  if(!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5+f.beta*5.5).toFixed(2)) : 11.0;
-  if(!f.pe_ratio  && f.eps_ttm > 0)              f.pe_ratio  = parseFloat((p.price/f.eps_ttm).toFixed(2));
-  if(!f.pb_ratio  && f.book_value_per_share > 0) f.pb_ratio  = parseFloat((p.price/f.book_value_per_share).toFixed(2));
-  if(!f.dividend_yield && f.dps > 0)             f.dividend_yield = parseFloat((f.dps/p.price*100).toFixed(2));
+  Object.keys(f).forEach(k => { f[k] = nn(f[k]); });
+  if (dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
+  if (!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5 + f.beta*5.5).toFixed(2)) : 11.0;
+  if (!f.pe_ratio  && f.eps_ttm > 0)              f.pe_ratio  = parseFloat((p.price/f.eps_ttm).toFixed(2));
+  if (!f.pb_ratio  && f.book_value_per_share > 0) f.pb_ratio  = parseFloat((p.price/f.book_value_per_share).toFixed(2));
+  if (!f.dividend_yield && f.dps > 0)             f.dividend_yield = parseFloat((f.dps/p.price*100).toFixed(2));
 
-  // Build full bandar object
   const r = d.bm;
-  const bm = {
-    avg_vol_10d: p.avg_volume, avg_vol_30d: p.avg_vol_30d || p.avg_volume,
+  r.ff_30d = nn(r.ff_30d); r.foreign_own_pct = nn(r.foreign_own_pct); r.score = nn(r.score) ?? 50;
+  (r.bb||[]).forEach(x=>{x.l=nn(x.l)??0; x.v=nn(x.v)??0;});
+  (r.bs||[]).forEach(x=>{x.l=nn(x.l)??0; x.v=nn(x.v)??0;});
+
+  return { f, bm: {
+    avg_vol_10d: p.avg_volume, avg_vol_30d: p.avg_vol_30d||p.avg_volume,
     vol_sessions: (p.sessions||[]).slice(0,10),
     foreign_net_buy_today: null, foreign_net_buy_5d: null, foreign_net_buy_30d: r.ff_30d,
-    foreign_flow_trend: r.ff_trend, foreign_ownership_pct: r.foreign_own_pct,
+    foreign_flow_trend: r.ff_trend||'unknown', foreign_ownership_pct: r.foreign_own_pct,
     top_broker_buy:  (r.bb||[]).map(x=>({broker:x.c,name:x.n,net_buy_lot:x.l,value_bn:x.v})),
     top_broker_sell: (r.bs||[]).map(x=>({broker:x.c,name:x.n,net_sell_lot:x.l,value_bn:x.v})),
-    broker_data_available: r.broker_real, dominant_buyer_type: r.buyer_type,
-    bandar_score: r.score, bandar_phase: r.phase,
+    broker_data_available: r.broker_real||false, dominant_buyer_type: r.buyer_type||'unknown', dominant_seller_type:'unknown',
+    bandar_score: r.score, bandar_phase: r.phase||'neutral',
     wyckoff_event: r.wyckoff, wyckoff_desc: r.wyckoff_desc,
-    institutional_signal: r.inst_sig,
-    unusual_vol_detected: r.unusual_vol, unusual_vol_desc: r.unusual_desc,
-    price_vol_divergence: r.pv_div, divergence_type: r.div_type,
-    vwap_relation: r.vwap, accumulation_distribution_line: r.adl,
-    vol_trend_10d: r.vol_trend, data_confidence: r.confidence,
-    bandar_summary: r.summary,
-    data_sources_used: ['Web Search','IDX','Yahoo Chart'],
+    institutional_signal: r.inst_sig||'neutral',
+    unusual_vol_detected: r.unusual_vol||false, unusual_vol_desc: r.unusual_desc,
+    price_vol_divergence: r.pv_div||false, divergence_type: r.div_type||'none',
+    vwap_relation: r.vwap||'at_vwap', accumulation_distribution_line: r.adl||'neutral',
+    vol_trend_10d: r.vol_trend||'stable', data_confidence: r.confidence||'low',
+    bandar_summary: r.summary||'', data_sources_used:['Web Search','Yahoo Finance Chart','IDX'],
     big_block_trades_today: null, candle_volume_pattern: null,
-    dominant_seller_type: 'unknown',
-  };
-
-  return { f, bm, a: d.a };
+  }, a: d.a };
 }
 
-// Harga Wajar — 4 metode valuasi, pure JS (no API)
 function calcFairValue(p,f){
   const res={};
   if(f.eps_ttm>0&&f.book_value_per_share>0){
     const g=Math.sqrt(22.5*f.eps_ttm*f.book_value_per_share);
-    res.graham={price:Math.round(g),method:'Graham Number',abbr:'GRAHAM',weight:.25,formula:`√(22.5 × EPS ${fmt(f.eps_ttm)} × BV ${fmt(f.book_value_per_share)})`};
+    res.graham={price:Math.round(g),method:'Graham Number',abbr:'GRAHAM',weight:.25,formula:'√(22.5 × EPS '+fmt(f.eps_ttm)+' × BV '+fmt(f.book_value_per_share)+')'};
   }
   if(f.dps>0&&f.cost_of_equity){
     const ke=(f.cost_of_equity||11)/100,gr=Math.min((f.dividend_growth_rate||5)/100,ke-.02);
-    if(ke>gr){const d1=f.dps*(1+gr),ddm=d1/(ke-gr);res.ddm={price:Math.round(ddm),method:'Dividend Discount Model',abbr:'DDM',weight:.20,formula:`D₁=${f.dps.toFixed(0)}×(1+${(gr*100).toFixed(1)}%)/(Ke ${(ke*100).toFixed(1)}%−g ${(gr*100).toFixed(1)}%)`};}
+    if(ke>gr){const d1=f.dps*(1+gr),ddm=d1/(ke-gr);res.ddm={price:Math.round(ddm),method:'Dividend Discount Model',abbr:'DDM',weight:.20,formula:'D1='+f.dps.toFixed(0)+'/(Ke '+( ke*100).toFixed(1)+'%-g '+(gr*100).toFixed(1)+'%)'};}
   }
   if(f.eps_ttm>0){
     const gr2=f.eps_growth_rate||10,fp=Math.max(8,Math.min(gr2,30));
-    res.per={price:Math.round(f.eps_ttm*fp),method:'PER Berbasis Pertumbuhan',abbr:'PER',weight:.30,formula:`EPS ${fmt(f.eps_ttm)} × PER Wajar ${fp.toFixed(1)}x (growth ${gr2.toFixed(1)}%)`};
+    res.per={price:Math.round(f.eps_ttm*fp),method:'PER Berbasis Pertumbuhan',abbr:'PER',weight:.30,formula:'EPS '+fmt(f.eps_ttm)+' × PER '+fp.toFixed(1)+'x'};
   }
   if(f.book_value_per_share>0&&f.roe){
     const ke2=(f.cost_of_equity||11)/100,fp2=Math.max(.5,f.roe/100/ke2);
-    res.pbv={price:Math.round(f.book_value_per_share*fp2),method:'PBV Berbasis ROE',abbr:'PBV',weight:.25,formula:`BV ${fmt(f.book_value_per_share)} × PBV Wajar ${fp2.toFixed(2)}x (ROE ${f.roe.toFixed(1)}%÷Ke ${(ke2*100).toFixed(1)}%)`};
+    res.pbv={price:Math.round(f.book_value_per_share*fp2),method:'PBV Berbasis ROE',abbr:'PBV',weight:.25,formula:'BV '+fmt(f.book_value_per_share)+' × PBV '+fp2.toFixed(2)+'x'};
   }
   const methods=Object.values(res);
   if(!methods.length)return null;
@@ -434,7 +441,6 @@ function calcFairValue(p,f){
   return{methods:res,consensus:Math.round(cons),upside:up.toFixed(1),status:up>15?'undervalue':up<-15?'overvalue':'fair',mos:mos.toFixed(1),count:methods.length};
 }
 
-// OBV + derived signals dari data sesi real (pure JS, no API)
 function calcBandarSignals(p, bm){
   const sessions = bm.vol_sessions || [];
   let obv = 0; const obvH = [];
@@ -518,6 +524,8 @@ function fmt(n){
   if(isNaN(num))return String(n);
   return num.toLocaleString('id');
 }
+// Safe number: always returns a float or null — never throws .toFixed errors
+function toN(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
 function fmtM(n){return n!=null?(n/1e6).toFixed(1)+'M':'-';}
 function upsideCol(n){return n>15?'var(--buy)':n<-15?'var(--sell)':'var(--hold)';}
 
@@ -582,7 +590,7 @@ function buildBandarHTML(p, bm){
     <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;flex-wrap:wrap;gap:6px;">
       <span>Avg 30D: ${fmtM(bm.avg_vol_30d)} · Avg 10D: ${fmtM(bm.avg_vol_10d)}</span>
       <span>Vol Hari Ini: <span style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--muted)'}">
-        ${bm.volRatio?.toFixed(2)||'-'}x rata-rata ${bm.volRatio>=2?'⚡ SANGAT TINGGI':bm.volRatio>=1.5?'TINGGI':bm.volRatio>=1.2?'Di atas avg':'Normal'}</span></span>
+        ${toN(bm.volRatio)?.toFixed(2)||'-'}x rata-rata ${bm.volRatio>=2?'⚡ SANGAT TINGGI':bm.volRatio>=1.5?'TINGGI':bm.volRatio>=1.2?'Di atas avg':'Normal'}</span></span>
     </div>
     ${bm.candle_volume_pattern?`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--purple);margin-top:6px;padding:6px 10px;background:rgba(167,139,250,.07);border-radius:5px;border-left:2px solid var(--purple);">📊 ${bm.candle_volume_pattern}</div>`:''}
   </div>` : '';
@@ -592,7 +600,7 @@ function buildBandarHTML(p, bm){
   <div class="ff-bar-wrap">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px;">
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;">
-        Foreign Net Flow ${bm.foreign_ownership_pct!=null?'· Kepemilikan Asing: <span style="color:var(--accent)">'+bm.foreign_ownership_pct.toFixed(1)+'%</span>':''}
+        Foreign Net Flow ${bm.foreign_ownership_pct!=null?'· Kepemilikan Asing: <span style="color:var(--accent)">'+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%</span>':''}
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${ffCol}">${ffLbl}</span>
@@ -623,14 +631,14 @@ function buildBandarHTML(p, bm){
         <td style="color:var(--buy);font-weight:700;">${b.broker||'-'}</td>
         <td style="color:var(--text);">${b.name||'-'}</td>
         <td style="color:var(--buy);text-align:right;">${b.net_buy_lot?fmt(b.net_buy_lot)+' lot':'-'}</td>
-        <td style="color:var(--buy);text-align:right;">${b.value_bn!=null?'Rp '+b.value_bn.toFixed(1)+' M':'-'}</td>
+        <td style="color:var(--buy);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td>
       </tr>`).join('');
     const sellRows = (bm.top_broker_sell||[]).slice(0,5).map(b=>`
       <tr>
         <td style="color:var(--sell);font-weight:700;">${b.broker||'-'}</td>
         <td style="color:var(--text);">${b.name||'-'}</td>
         <td style="color:var(--sell);text-align:right;">${b.net_sell_lot?fmt(b.net_sell_lot)+' lot':'-'}</td>
-        <td style="color:var(--sell);text-align:right;">${b.value_bn!=null?'Rp '+b.value_bn.toFixed(1)+' M':'-'}</td>
+        <td style="color:var(--sell);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td>
       </tr>`).join('');
     const tStyle = `width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;`;
     const thStyle = `font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:5px 6px;border-bottom:1px solid var(--border);text-align:left;`;
@@ -677,7 +685,7 @@ function buildBandarHTML(p, bm){
   if(bm.unusual_vol_detected) alerts.push(`<div class="alert-box alert-anomaly">🔔 VOLUME ANOMALI: ${bm.unusual_vol_desc||'Volume tidak biasa terdeteksi'}</div>`);
   if(bm.price_vol_divergence && bm.divergence_type && bm.divergence_type!=='none') alerts.push(`<div class="alert-box alert-divergence">⚡ DIVERGENSI ${bm.divergence_type==='bullish_divergence'?'BULLISH — Harga turun tapi OBV naik (potensi reversal naik)':'BEARISH — Harga naik tapi OBV turun (potensi reversal turun)'}</div>`);
   if(bm.wyckoff_event && bm.wyckoff_desc) alerts.push(`<div class="alert-box" style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);color:var(--purple);">◈ WYCKOFF EVENT: <b>${bm.wyckoff_event}</b> — ${bm.wyckoff_desc}</div>`);
-  if(bm.foreign_flow_trend==='net_buy' && (ff30||0)>50) alerts.push(`<div class="alert-box alert-foreign">🌐 FOREIGN BUYING: Asing akumulasi kuat — Net buy Rp ${fmt(ff30)}M (30D)${bm.foreign_ownership_pct?' · Kepemilikan: '+bm.foreign_ownership_pct.toFixed(1)+'%':''}</div>`);
+  if(bm.foreign_flow_trend==='net_buy' && (ff30||0)>50) alerts.push(`<div class="alert-box alert-foreign">🌐 FOREIGN BUYING: Asing akumulasi kuat — Net buy Rp ${fmt(ff30)}M (30D)${bm.foreign_ownership_pct?' · Kepemilikan: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%':''}</div>`);
   if(bm.foreign_flow_trend==='net_sell' && (ff30||0)<-50) alerts.push(`<div class="alert-box" style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.3);color:var(--sell);">⚠ FOREIGN SELLING: Asing distribusi kuat — Net sell Rp ${fmt(Math.abs(ff30))}M (30D)</div>`);
 
   // PV Signal labels
@@ -744,7 +752,7 @@ function buildBandarHTML(p, bm){
     <div class="bandar-signals-grid">
       <div class="bsc">
         <div class="bsc-label">Vol Ratio Hari Ini</div>
-        <div class="bsc-value" style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--text)'}">${bm.volRatio?.toFixed(2)||'-'}x</div>
+        <div class="bsc-value" style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--text)'}">${toN(bm.volRatio)?.toFixed(2)||'-'}x</div>
         <div class="bsc-interp">${bm.volRatio>=2?'⚡ Sangat tinggi':bm.volRatio>=1.5?'Tinggi sekali':bm.volRatio>=1.2?'Diatas rata-rata':bm.volRatio<0.6?'Sangat sepi':'Normal'}</div>
       </div>
       <div class="bsc">
@@ -760,7 +768,7 @@ function buildBandarHTML(p, bm){
       <div class="bsc">
         <div class="bsc-label">Foreign Flow</div>
         <div class="bsc-value" style="color:${ffCol};font-size:13px;">${ffLbl}</div>
-        <div class="bsc-interp" style="color:${ffCol}">${bm.foreignStrength||''} · ${bm.foreign_net_buy_today!=null?'Hari ini: '+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+'M':'Kepemilikan: '+(bm.foreign_ownership_pct?.toFixed(1)||'?')+'%'}</div>
+        <div class="bsc-interp" style="color:${ffCol}">${bm.foreignStrength||''} · ${bm.foreign_net_buy_today!=null?'Hari ini: '+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+'M':'Kepemilikan: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%'}</div>
       </div>
       <div class="bsc">
         <div class="bsc-label">VWAP</div>

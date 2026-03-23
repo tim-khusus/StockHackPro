@@ -1,50 +1,54 @@
+// api/claude.js — Vercel Serverless Function
+// API key disimpan di environment variable Vercel, tidak pernah terekspos ke client
+
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Gunakan POST' });
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  const { ticker } = req.body;
-  const apiKey = process.env.GEMINI_API_KEY;
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-  if (!apiKey) return res.status(200).json({ summary: "API Key belum terpasang!" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'API key tidak dikonfigurasi di server' });
+  }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const body = req.body;
+
+    // Validasi minimal
+    if (!body?.messages || !Array.isArray(body.messages)) {
+      return res.status(400).json({ error: 'Request tidak valid' });
+    }
+
+    // Forward ke Anthropic API dengan key dari env variable
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Search IDX for ${ticker} price on March 23, 2026. 
-            Then output ONLY this JSON: {"price":number, "change":number, "signal":"BUY/SELL", "fair_value":number, "vol_ratio":number, "summary":"short analysis", "support":number, "resistance":number, "phase":"trend"}`
-          }]
-        }],
-        tools: [{ google_search: {} }],
-        generationConfig: {
-          temperature: 0.1, // Biar gak "ngelantur"
-          maxOutputTokens: 400 // Biar responnya singkat & cepet (gak loading terus)
-        }
-      })
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(body),
     });
 
     const data = await response.json();
 
-    if (data.error) throw new Error(data.error.message);
-    
-    // Ambil teks mentah dari AI
-    const rawText = data.candidates[0].content.parts[0].text;
-    
-    // Ekstraksi JSON (Sangat Penting!)
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Format data error. Coba klik ANALYZE lagi.");
-    
-    const parsedData = JSON.parse(jsonMatch[0]);
-    res.status(200).json(parsedData);
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
 
-  } catch (error) {
-    console.error("ERROR:", error.message);
-    res.status(200).json({
-      price: 0, change: 0, signal: "ERR", fair_value: 0, vol_ratio: 0,
-      summary: `Koneksi Google Search sedang sibuk. Silakan klik ANALYZE sekali lagi.`,
-      support: 0, resistance: 0, phase: "N/A"
-    });
+    return res.status(200).json(data);
+
+  } catch (err) {
+    console.error('Proxy error:', err);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
   }
 }

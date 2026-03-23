@@ -7,17 +7,14 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(200).json({ summary: "Error: API Key Hilang!" });
 
   try {
-    // HASIL AUDIT: Menggunakan model 'gemini-2.0-flash' yang terbukti aktif di akun kamu
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    // UPDATE: Menggunakan gemini-2.5-flash sesuai hasil audit & kebijakan baru Google
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Berikan analisis teknikal saham IDX: ${ticker}. 
-            Wajib dalam format JSON murni: 
-            {"price": 1000, "change": 1.5, "signal": "BUY", "fair_value": 1100, "vol_ratio": 1.2, "summary": "Analisis singkat tren", "support": 900, "resistance": 1200, "phase": "Markup"}. 
-            Hanya balas dengan JSON saja tanpa kata-kata lain.`
+            text: `Analisis teknikal saham IDX: ${ticker}. Berikan hasil HANYA dalam format JSON murni: {"price": 1000, "change": 1.5, "signal": "BUY", "fair_value": 1100, "vol_ratio": 1.2, "summary": "Analisis singkat", "support": 900, "resistance": 1200, "phase": "Markup"}. Jangan ada teks tambahan.`
           }]
         }]
       })
@@ -28,16 +25,18 @@ export default async function handler(req, res) {
     if (data.error) throw new Error(data.error.message);
     
     if (!data.candidates || !data.candidates[0].content) {
-      throw new Error("Respon kosong atau diblokir filter keamanan.");
+      throw new Error("Respon AI kosong atau diblokir filter.");
     }
 
     let rawText = data.candidates[0].content.parts[0].text;
     
-    // Pencapit JSON otomatis (Tahan banting jika ada markdown)
+    // Pencapit JSON manual yang tahan banting
     const jsonStart = rawText.indexOf('{');
     const jsonEnd = rawText.lastIndexOf('}') + 1;
-    const cleanJson = rawText.substring(jsonStart, jsonEnd);
     
+    if (jsonStart === -1) throw new Error("Format data tidak sesuai");
+    
+    const cleanJson = rawText.substring(jsonStart, jsonEnd);
     res.status(200).json(JSON.parse(cleanJson));
 
   } catch (error) {

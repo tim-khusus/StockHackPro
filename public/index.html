@@ -322,22 +322,32 @@ function parseJSON(text){
 }
 
 // ══════════════════════════════════════
-// CALL 1 — Harga + Fundamental (1 request)
+// CALL 1 — Harga + Fundamental REAL
+// Langsung fetch dari Yahoo Finance via /api/price (bukan tanya Claude)
 // ══════════════════════════════════════
 async function fetchPriceAndFundamental(ticker){
-  const txt=await callClaude([{role:'user',content:
-`Search Yahoo Finance for ${ticker}.JK IDX stock price AND financials.
-Searches: "${ticker}.JK stock price Yahoo Finance" AND "${ticker}.JK EPS book value ROE"
+  const r = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`);
+  const d = await r.json();
+  if(!d.found) throw new Error(`${ticker} tidak ditemukan. ${d.reason||'Periksa kode saham.'}`);
 
-Return ONLY compact JSON (no markdown, null if unavailable):
-{"found":true,"ticker":"${ticker}","price":<int>,"change":<int>,"change_pct":<float>,"open":<int>,"high":<int>,"low":<int>,"volume":<int>,"avg_volume":<int|null>,"prev_close":<int>,"week52_high":<int>,"week52_low":<int>,"market_cap_str":<str|null>,"company_name":"<str>","sector":"<str>","industry":"<str>","eps_ttm":<float|null>,"eps_growth_rate":<float|null>,"book_value_per_share":<float|null>,"dps":<float|null>,"dividend_growth_rate":<float|null>,"roe":<float|null>,"roa":<float|null>,"net_margin":<float|null>,"debt_to_equity":<float|null>,"current_ratio":<float|null>,"pe_ratio":<float|null>,"pb_ratio":<float|null>,"beta":<float|null>,"cost_of_equity":<float|null>}
-If not found: {"found":false,"ticker":"${ticker}","reason":"<why>"}`
-  }],true,1000);
-  const d=parseJSON(txt);
-  if(!d.found) throw new Error(`${ticker} tidak ditemukan. ${d.reason||''}`);
-  const p={ticker:d.ticker,price:d.price,change:d.change,change_pct:d.change_pct,open:d.open,high:d.high,low:d.low,volume:d.volume,avg_volume:d.avg_volume,prev_close:d.prev_close,week52_high:d.week52_high,week52_low:d.week52_low,market_cap_str:d.market_cap_str,company_name:d.company_name,sector:d.sector,industry:d.industry};
-  const f={eps_ttm:d.eps_ttm,eps_growth_rate:d.eps_growth_rate,book_value_per_share:d.book_value_per_share,dps:d.dps,dividend_growth_rate:d.dividend_growth_rate,roe:d.roe,roa:d.roa,net_margin:d.net_margin,debt_to_equity:d.debt_to_equity,current_ratio:d.current_ratio,pe_ratio:d.pe_ratio,pb_ratio:d.pb_ratio,beta:d.beta,cost_of_equity:d.cost_of_equity};
-  return{p,f};
+  // Pisah ke p (price/market) dan f (fundamental)
+  const p = {
+    ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
+    open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
+    prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
+    market_cap_str: d.market_cap_str, company_name: d.company_name,
+    sector: d.sector, industry: d.industry,
+    sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
+  };
+  const f = {
+    eps_ttm: d.eps_ttm, eps_growth_rate: d.eps_growth_rate,
+    book_value_per_share: d.book_value_per_share,
+    dps: d.dps, dividend_yield: d.dividend_yield, dividend_growth_rate: d.dividend_growth_rate,
+    roe: d.roe, roa: d.roa, net_margin: d.net_margin, revenue_growth: d.revenue_growth,
+    debt_to_equity: d.debt_to_equity, current_ratio: d.current_ratio,
+    pe_ratio: d.pe_ratio, pb_ratio: d.pb_ratio, beta: d.beta, cost_of_equity: d.cost_of_equity,
+  };
+  return { p, f };
 }
 
 // ══════════════════════════════════════
@@ -371,63 +381,39 @@ function calcFairValue(p,f){
 }
 
 // ══════════════════════════════════════
-// CALL 2 — Bandarmologi + Analisa Final (1 request)
-// ══════════════════════════════════════
-// CALL 2 — Bandarmologi (lean prompt, web search)
-async function fetchBandarmology(ticker,p){
-  const txt=await callClaude([{role:'user',content:
-`Search: "${ticker} foreign net buy sell IDX 2025" and "${ticker} broker summary IDX"
-Stock: ${ticker}.JK | Price: Rp ${p.price} | Vol today: ${p.volume||0} | Avg30D: ${p.avg_volume||0}
+// CALL 2 — Bandarmologi
+// Sessions historis REAL sudah ada dari /api/price — Claude hanya interpretasi bandar/foreign
+async function fetchBandarmology(ticker, p){
+  const realSessions = (p.sessions || []).slice(0, 10);
+  const sessStr = realSessions.map(s =>
+    `${s.session}(${s.date}):vol=${s.vol},price=${s.price},chg=${s.change_pct}%`
+  ).join(' | ');
 
-Return JSON only (no markdown):
-{"avg_vol_10d":<int>,"avg_vol_30d":${p.avg_volume||'null'},
-"vs":[
-{"s":"T","d":"today","v":${p.volume||0},"p":${p.price},"c":${p.change_pct},"e":false},
-{"s":"T-1","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-2","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-3","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-4","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-5","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-6","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-7","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-8","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
-{"s":"T-9","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>}
-],
-"ff_today":<float|null>,"ff_5d":<float|null>,"ff_30d":<float|null>,
-"ff_trend":"net_buy"|"net_sell"|"neutral"|"unknown",
-"foreign_own_pct":<float|null>,
-"bb":[{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>}],
-"bs":[{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>}],
-"broker_real":<bool>,"buyer_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown",
-"seller_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown",
-"block_trades":<int|null>,"unusual_vol":<bool>,"unusual_desc":<str|null>,
-"vol_trend":"increasing"|"decreasing"|"stable",
-"pv_div":<bool>,"div_type":"bullish_divergence"|"bearish_divergence"|"none",
-"vwap":"above_vwap"|"below_vwap"|"at_vwap",
-"adl":"positive"|"negative"|"neutral",
-"score":<0-100>,"phase":"accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral",
-"wyckoff":<str|null>,"wyckoff_desc":<str|null>,
-"inst_sig":"accumulation"|"distribution"|"neutral",
-"cvp":<str|null>,"sources":["<src>"],"confidence":"high"|"medium"|"low",
-"summary":"<3 kalimat: broker dominan, foreign flow, saran trader>"}`
-  }],true,1000);
-  // Remap short keys to full keys expected by render
-  const r=parseJSON(txt);
-  return{
-    avg_vol_10d:r.avg_vol_10d, avg_vol_30d:r.avg_vol_30d,
-    vol_sessions:(r.vs||[]).map(x=>({session:x.s,date:x.d,vol:x.v,price:x.p,change_pct:x.c,is_estimated:x.e})),
-    foreign_net_buy_today:r.ff_today, foreign_net_buy_5d:r.ff_5d, foreign_net_buy_30d:r.ff_30d,
-    foreign_flow_trend:r.ff_trend, foreign_ownership_pct:r.foreign_own_pct,
-    top_broker_buy:(r.bb||[]).map(x=>({broker:x.c,name:x.n,net_buy_lot:x.l,value_bn:x.v})),
-    top_broker_sell:(r.bs||[]).map(x=>({broker:x.c,name:x.n,net_sell_lot:x.l,value_bn:x.v})),
-    broker_data_available:r.broker_real, dominant_buyer_type:r.buyer_type, dominant_seller_type:r.seller_type,
-    big_block_trades_today:r.block_trades, unusual_vol_detected:r.unusual_vol, unusual_vol_desc:r.unusual_desc,
-    vol_trend_10d:r.vol_trend, price_vol_divergence:r.pv_div, divergence_type:r.div_type,
-    vwap_relation:r.vwap, accumulation_distribution_line:r.adl,
-    bandar_score:r.score, bandar_phase:r.phase,
-    wyckoff_event:r.wyckoff, wyckoff_desc:r.wyckoff_desc,
-    institutional_signal:r.inst_sig, candle_volume_pattern:r.cvp,
-    data_sources_used:r.sources, data_confidence:r.confidence, bandar_summary:r.summary
+  const txt = await callClaude([{role:'user', content:
+`Search: "${ticker} foreign net buy sell IDX 2025" dan "${ticker} broker summary IDX"
+Saham: ${ticker}.JK | Harga REAL: Rp ${p.price} | Vol: ${p.volume||0} | Avg30D: ${p.avg_volume||0}
+Historis REAL 10 sesi: ${sessStr||'belum tersedia'}
+
+Interpretasi bandarmologi. Return JSON only (no markdown):
+{"ff_today":<float|null>,"ff_5d":<float|null>,"ff_30d":<float|null>,"ff_trend":"net_buy"|"net_sell"|"neutral"|"unknown","foreign_own_pct":<float|null>,"bb":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"bs":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"broker_real":<bool>,"buyer_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","seller_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","block_trades":<int|null>,"unusual_vol":<bool>,"unusual_desc":<str|null>,"vol_trend":"increasing"|"decreasing"|"stable","pv_div":<bool>,"div_type":"bullish_divergence"|"bearish_divergence"|"none","vwap":"above_vwap"|"below_vwap"|"at_vwap","adl":"positive"|"negative"|"neutral","score":<0-100>,"phase":"accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral","wyckoff":<str|null>,"wyckoff_desc":<str|null>,"inst_sig":"accumulation"|"distribution"|"neutral","cvp":<str|null>,"sources":["<src>"],"confidence":"high"|"medium"|"low","summary":"<3 kalimat: broker dominan, foreign flow, saran trader>"}`
+  }], true, 900);
+
+  const r = parseJSON(txt);
+  return {
+    avg_vol_10d: p.avg_volume, avg_vol_30d: p.avg_vol_30d || p.avg_volume,
+    vol_sessions: realSessions.length > 0 ? realSessions : [],
+    foreign_net_buy_today: r.ff_today, foreign_net_buy_5d: r.ff_5d, foreign_net_buy_30d: r.ff_30d,
+    foreign_flow_trend: r.ff_trend, foreign_ownership_pct: r.foreign_own_pct,
+    top_broker_buy:  (r.bb||[]).map(x=>({broker:x.c, name:x.n, net_buy_lot:x.l,  value_bn:x.v})),
+    top_broker_sell: (r.bs||[]).map(x=>({broker:x.c, name:x.n, net_sell_lot:x.l, value_bn:x.v})),
+    broker_data_available: r.broker_real, dominant_buyer_type: r.buyer_type, dominant_seller_type: r.seller_type,
+    big_block_trades_today: r.block_trades, unusual_vol_detected: r.unusual_vol, unusual_vol_desc: r.unusual_desc,
+    vol_trend_10d: r.vol_trend, price_vol_divergence: r.pv_div, divergence_type: r.div_type,
+    vwap_relation: r.vwap, accumulation_distribution_line: r.adl,
+    bandar_score: r.score, bandar_phase: r.phase,
+    wyckoff_event: r.wyckoff, wyckoff_desc: r.wyckoff_desc,
+    institutional_signal: r.inst_sig, candle_volume_pattern: r.cvp,
+    data_sources_used: r.sources, data_confidence: r.confidence, bandar_summary: r.summary,
   };
 }
 

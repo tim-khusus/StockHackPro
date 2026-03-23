@@ -263,10 +263,10 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
     <div class="loading-text" id="loadingText">Memulai analisa...</div>
     <div class="loading-sub" id="loadingSub">Mengambil data dari internet</div>
     <div class="loading-steps">
-      <div class="loading-step" id="step1">▸ [CALL 1/2] Mengambil harga + fundamental real-time...</div>
-      <div class="loading-step" id="step2">▸ [LOKAL] Menghitung harga wajar — Graham · DDM · PER · PBV</div>
-      <div class="loading-step" id="step3">▸ [CALL 2/2] Bandarmologi + Analisa AI akhir...</div>
-      <div class="loading-step" id="step4">▸ Menyusun hasil analisa lengkap...</div>
+      <div class="loading-step" id="step1">▸ [1/3] Harga + Fundamental — Yahoo Finance</div>
+      <div class="loading-step" id="step2">▸ [LOKAL] Hitung harga wajar — Graham · DDM · PER · PBV</div>
+      <div class="loading-step" id="step3">▸ [2/3] Bandarmologi — Foreign Flow · Broker · Volume</div>
+      <div class="loading-step" id="step4">▸ [3/3] Rekomendasi AI — BUY / SELL / HOLD</div>
       <div class="loading-step" id="step5" style="display:none;"></div>
     </div>
   </div>
@@ -373,27 +373,79 @@ function calcFairValue(p,f){
 // ══════════════════════════════════════
 // CALL 2 — Bandarmologi + Analisa Final (1 request)
 // ══════════════════════════════════════
-async function fetchBandarmologyAndAnalysis(ticker,p,f,fv){
+// CALL 2 — Bandarmologi (lean prompt, web search)
+async function fetchBandarmology(ticker,p){
+  const txt=await callClaude([{role:'user',content:
+`Search: "${ticker} foreign net buy sell IDX 2025" and "${ticker} broker summary IDX"
+Stock: ${ticker}.JK | Price: Rp ${p.price} | Vol today: ${p.volume||0} | Avg30D: ${p.avg_volume||0}
+
+Return JSON only (no markdown):
+{"avg_vol_10d":<int>,"avg_vol_30d":${p.avg_volume||'null'},
+"vs":[
+{"s":"T","d":"today","v":${p.volume||0},"p":${p.price},"c":${p.change_pct},"e":false},
+{"s":"T-1","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-2","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-3","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-4","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-5","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-6","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-7","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-8","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>},
+{"s":"T-9","d":"<DD/MM>","v":<int>,"p":<int>,"c":<float>,"e":<bool>}
+],
+"ff_today":<float|null>,"ff_5d":<float|null>,"ff_30d":<float|null>,
+"ff_trend":"net_buy"|"net_sell"|"neutral"|"unknown",
+"foreign_own_pct":<float|null>,
+"bb":[{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>}],
+"bs":[{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>},{"c":"<code>","n":"<name>","l":<int>,"v":<float>}],
+"broker_real":<bool>,"buyer_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown",
+"seller_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown",
+"block_trades":<int|null>,"unusual_vol":<bool>,"unusual_desc":<str|null>,
+"vol_trend":"increasing"|"decreasing"|"stable",
+"pv_div":<bool>,"div_type":"bullish_divergence"|"bearish_divergence"|"none",
+"vwap":"above_vwap"|"below_vwap"|"at_vwap",
+"adl":"positive"|"negative"|"neutral",
+"score":<0-100>,"phase":"accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral",
+"wyckoff":<str|null>,"wyckoff_desc":<str|null>,
+"inst_sig":"accumulation"|"distribution"|"neutral",
+"cvp":<str|null>,"sources":["<src>"],"confidence":"high"|"medium"|"low",
+"summary":"<3 kalimat: broker dominan, foreign flow, saran trader>"}`
+  }],true,1000);
+  // Remap short keys to full keys expected by render
+  const r=parseJSON(txt);
+  return{
+    avg_vol_10d:r.avg_vol_10d, avg_vol_30d:r.avg_vol_30d,
+    vol_sessions:(r.vs||[]).map(x=>({session:x.s,date:x.d,vol:x.v,price:x.p,change_pct:x.c,is_estimated:x.e})),
+    foreign_net_buy_today:r.ff_today, foreign_net_buy_5d:r.ff_5d, foreign_net_buy_30d:r.ff_30d,
+    foreign_flow_trend:r.ff_trend, foreign_ownership_pct:r.foreign_own_pct,
+    top_broker_buy:(r.bb||[]).map(x=>({broker:x.c,name:x.n,net_buy_lot:x.l,value_bn:x.v})),
+    top_broker_sell:(r.bs||[]).map(x=>({broker:x.c,name:x.n,net_sell_lot:x.l,value_bn:x.v})),
+    broker_data_available:r.broker_real, dominant_buyer_type:r.buyer_type, dominant_seller_type:r.seller_type,
+    big_block_trades_today:r.block_trades, unusual_vol_detected:r.unusual_vol, unusual_vol_desc:r.unusual_desc,
+    vol_trend_10d:r.vol_trend, price_vol_divergence:r.pv_div, divergence_type:r.div_type,
+    vwap_relation:r.vwap, accumulation_distribution_line:r.adl,
+    bandar_score:r.score, bandar_phase:r.phase,
+    wyckoff_event:r.wyckoff, wyckoff_desc:r.wyckoff_desc,
+    institutional_signal:r.inst_sig, candle_volume_pattern:r.cvp,
+    data_sources_used:r.sources, data_confidence:r.confidence, bandar_summary:r.summary
+  };
+}
+
+// CALL 3 — Analisa Final AI (no web search, pure reasoning)
+async function fetchAnalysis(ticker,p,f,fv,bm){
   const pos52=(p.week52_high&&p.week52_low)?(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*100).toFixed(0)+'%':'N/A';
   const rsiEst=(p.week52_high&&p.week52_low)?Math.round(30+(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*50)):50;
-  const fvTxt=fv?`Wajar Rp ${fmt(fv.consensus)} (${fv.upside>0?'+':''}${fv.upside}%, ${fv.status})`:'N/A';
-
   const txt=await callClaude([{role:'user',content:
-`Search IDX bandarmology for ${ticker}.JK:
-1. "${ticker} foreign net buy sell IDX asing 2025"
-2. "${ticker} broker summary net buy sell IDX"
+`Analis saham IDX senior. Data ${ticker}.JK:
+Harga: Rp ${p.price} (${p.change_pct}%) | Vol: ${p.volume?(p.volume/1e6).toFixed(1)+'M':'N/A'} | 52W: ${fmt(p.week52_low)}-${fmt(p.week52_high)} | RSI≈${rsiEst} | Pos: ${pos52}
+Fundamental: EPS=${f.eps_ttm||'N/A'} ROE=${f.roe||'N/A'}% PER=${f.pe_ratio||'N/A'}x PBV=${f.pb_ratio||'N/A'}x
+FairValue: ${fv?`Rp ${fmt(fv.consensus)} (${fv.upside>0?'+':''}${fv.upside}%, ${fv.status})`:'N/A'}
+Bandar: score=${bm.score}/100 fase=${bm.bandar_phase} OBV=${bm.obvTrend} FF=${bm.foreign_flow_trend} volRatio=${bm.volRatio?.toFixed(2)}x
 
-Context: price Rp ${p.price.toLocaleString('id')} (${p.change_pct}%), vol ${p.volume?(p.volume/1e6).toFixed(1)+'M':'N/A'}, avg ${p.avg_volume?(p.avg_volume/1e6).toFixed(1)+'M':'N/A'}
-Fundamental: EPS=${f.eps_ttm||'N/A'} ROE=${f.roe||'N/A'}% PER=${f.pe_ratio||'N/A'}x | FairValue=${fvTxt}
-Technical: 52W ${fmt(p.week52_low)}–${fmt(p.week52_high)} pos=${pos52} RSI≈${rsiEst}
-
-Return ONE JSON object with "bandar" and "analisa" keys (no markdown):
-{"bandar":{"avg_vol_30d":${p.avg_volume||'null'},"avg_vol_10d":<int>,"vol_sessions":[{"session":"T","date":"today","vol":${p.volume||0},"price":${p.price},"change_pct":${p.change_pct},"is_estimated":false},{"session":"T-1","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-2","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-3","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-4","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-5","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-6","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-7","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-8","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},{"session":"T-9","date":"<DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>}],"foreign_net_buy_today":<float|null>,"foreign_net_buy_5d":<float|null>,"foreign_net_buy_30d":<float|null>,"foreign_flow_trend":"net_buy"|"net_sell"|"neutral"|"unknown","foreign_ownership_pct":<float|null>,"top_broker_buy":[{"broker":"<code>","name":"<n>","net_buy_lot":<int>,"value_bn":<float>},{"broker":"<code>","name":"<n>","net_buy_lot":<int>,"value_bn":<float>},{"broker":"<code>","name":"<n>","net_buy_lot":<int>,"value_bn":<float>}],"top_broker_sell":[{"broker":"<code>","name":"<n>","net_sell_lot":<int>,"value_bn":<float>},{"broker":"<code>","name":"<n>","net_sell_lot":<int>,"value_bn":<float>},{"broker":"<code>","name":"<n>","net_sell_lot":<int>,"value_bn":<float>}],"broker_data_available":<bool>,"dominant_buyer_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","dominant_seller_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","big_block_trades_today":<int|null>,"unusual_vol_detected":<bool>,"unusual_vol_desc":<str|null>,"vol_trend_10d":"increasing"|"decreasing"|"stable","price_vol_divergence":<bool>,"divergence_type":"bullish_divergence"|"bearish_divergence"|"none","vwap_relation":"above_vwap"|"below_vwap"|"at_vwap","accumulation_distribution_line":"positive"|"negative"|"neutral","bandar_score":<0-100>,"bandar_phase":"accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral","wyckoff_event":<str|null>,"wyckoff_desc":<str|null>,"institutional_signal":"accumulation"|"distribution"|"neutral","candle_volume_pattern":<str|null>,"data_sources_used":["<src>"],"data_confidence":"high"|"medium"|"low","bandar_summary":"<4 kalimat: broker dominan, foreign flow, OBV, fase Wyckoff, saran trader ritel>"},"analisa":{"keputusan":"BUY"|"SELL"|"HOLD","confidence":<60-95>,"target_harga":"Rp <n>","stop_loss":"Rp <n>","potensi_gain":"<+X.X%>","risk_level":<1-10>,"teknikal":{"RSI ~${rsiEst}":"<interp>","Posisi 52W ${pos52}":"<interp>","Momentum":"<interp>","Volume":"<interp>","Support":"Rp <n>","Resistance":"Rp <n>","Tren":"<interp>"},"sentimen":"Bullish"|"Bearish"|"Netral","katalis":["<k1>","<k2>","<k3>"],"risiko":["<r1>","<r2>"],"analisa":"<3-4 kalimat: harga Rp ${p.price.toLocaleString('id')}, harga wajar, sinyal bandar, target & stop loss>"}}`
-  }],true,1800);
-
-  const d=parseJSON(txt);
-  if(!d.bandar||!d.analisa) throw new Error('Respons tidak lengkap, coba lagi');
-  return{bm:d.bandar, a:d.analisa};
+Balas JSON saja:
+{"keputusan":"BUY"|"SELL"|"HOLD","confidence":<60-95>,"target_harga":"Rp <n>","stop_loss":"Rp <n>","potensi_gain":"<+X%>","risk_level":<1-10>,"teknikal":{"RSI":"<interp>","Posisi 52W":"<interp>","Momentum":"<interp>","Volume":"<interp>","Support":"Rp <n>","Resistance":"Rp <n>","Tren":"<interp>"},"sentimen":"Bullish"|"Bearish"|"Netral","katalis":["<k1>","<k2>","<k3>"],"risiko":["<r1>","<r2>"],"analisa":"<3 kalimat ringkas: harga, wajar, sinyal bandar, target, stop loss>"}`
+  }],false,800);
+  return parseJSON(txt);
 }
 
 // OBV + derived signals (pure JS)
@@ -434,7 +486,7 @@ function calcBandarSignals(p,bm){
 }
 
 // ══════════════════════════════════════
-// MAIN — 2 API calls total
+// MAIN — 3 lean API calls, ~7K token each
 // ══════════════════════════════════════
 async function runAnalysis(){
   const ticker=document.getElementById('tickerInput').value.trim().toUpperCase();
@@ -445,18 +497,22 @@ async function runAnalysis(){
   document.getElementById('result').style.display='none';
   setStep(0);
   try{
-    setTxt('Mengambil harga & data fundamental...','Yahoo Finance · '+ticker+'.JK · Call 1/2');
+    setTxt('Mengambil harga & fundamental...','Call 1/3 · Yahoo Finance · '+ticker+'.JK');
     setStep(0);
-    const {p:P, f:F} = await fetchPriceAndFundamental(ticker);
+    const {p:P,f:F}=await fetchPriceAndFundamental(ticker);
 
     setTxt('Menghitung harga wajar...','Graham · DDM · PER · PBV');
-    setStep(2);
+    setStep(1);
     const FV=calcFairValue(P,F);
 
-    setTxt('Analisa bandarmologi & rekomendasi AI...','Bandar · Foreign Flow · Broker · Call 2/2');
-    setStep(3);
-    const {bm:bmRaw, a:A} = await fetchBandarmologyAndAnalysis(ticker,P,F,FV);
+    setTxt('Analisa bandarmologi...','Call 2/3 · Foreign Flow · Broker · Volume');
+    setStep(2);
+    const bmRaw=await fetchBandarmology(ticker,P);
     const BM=calcBandarSignals(P,bmRaw);
+
+    setTxt('Menyimpulkan rekomendasi AI...','Call 3/3 · BUY / SELL / HOLD');
+    setStep(3);
+    const A=await fetchAnalysis(ticker,P,F,FV,BM);
 
     setStep(4);
     renderResult(ticker,P,F,FV,BM,A);

@@ -406,6 +406,34 @@ Return ONE JSON object dengan key "f", "bm", "a" (no markdown):
   return { f, bm, a: d.a };
 }
 
+// Harga Wajar — 4 metode valuasi, pure JS (no API)
+function calcFairValue(p,f){
+  const res={};
+  if(f.eps_ttm>0&&f.book_value_per_share>0){
+    const g=Math.sqrt(22.5*f.eps_ttm*f.book_value_per_share);
+    res.graham={price:Math.round(g),method:'Graham Number',abbr:'GRAHAM',weight:.25,formula:`√(22.5 × EPS ${fmt(f.eps_ttm)} × BV ${fmt(f.book_value_per_share)})`};
+  }
+  if(f.dps>0&&f.cost_of_equity){
+    const ke=(f.cost_of_equity||11)/100,gr=Math.min((f.dividend_growth_rate||5)/100,ke-.02);
+    if(ke>gr){const d1=f.dps*(1+gr),ddm=d1/(ke-gr);res.ddm={price:Math.round(ddm),method:'Dividend Discount Model',abbr:'DDM',weight:.20,formula:`D₁=${f.dps.toFixed(0)}×(1+${(gr*100).toFixed(1)}%)/(Ke ${(ke*100).toFixed(1)}%−g ${(gr*100).toFixed(1)}%)`};}
+  }
+  if(f.eps_ttm>0){
+    const gr2=f.eps_growth_rate||10,fp=Math.max(8,Math.min(gr2,30));
+    res.per={price:Math.round(f.eps_ttm*fp),method:'PER Berbasis Pertumbuhan',abbr:'PER',weight:.30,formula:`EPS ${fmt(f.eps_ttm)} × PER Wajar ${fp.toFixed(1)}x (growth ${gr2.toFixed(1)}%)`};
+  }
+  if(f.book_value_per_share>0&&f.roe){
+    const ke2=(f.cost_of_equity||11)/100,fp2=Math.max(.5,f.roe/100/ke2);
+    res.pbv={price:Math.round(f.book_value_per_share*fp2),method:'PBV Berbasis ROE',abbr:'PBV',weight:.25,formula:`BV ${fmt(f.book_value_per_share)} × PBV Wajar ${fp2.toFixed(2)}x (ROE ${f.roe.toFixed(1)}%÷Ke ${(ke2*100).toFixed(1)}%)`};
+  }
+  const methods=Object.values(res);
+  if(!methods.length)return null;
+  const tw=methods.reduce((s,m)=>s+m.weight,0);
+  const cons=methods.reduce((s,m)=>s+m.price*m.weight,0)/tw;
+  const up=((cons-p.price)/p.price*100);
+  const mos=((cons-p.price)/cons*100);
+  return{methods:res,consensus:Math.round(cons),upside:up.toFixed(1),status:up>15?'undervalue':up<-15?'overvalue':'fair',mos:mos.toFixed(1),count:methods.length};
+}
+
 // OBV + derived signals dari data sesi real (pure JS, no API)
 function calcBandarSignals(p, bm){
   const sessions = bm.vol_sessions || [];

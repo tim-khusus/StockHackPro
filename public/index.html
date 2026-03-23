@@ -325,7 +325,7 @@ function parseJSON(text){
 // CALL 1 — Harga + Fundamental REAL
 // Langsung fetch dari Yahoo Finance via /api/price (bukan tanya Claude)
 // ══════════════════════════════════════
-// Ambil harga REAL dari /api/price (Yahoo Finance chart v8 — terbukti berhasil)
+// Ambil harga REAL dari /api/price (Yahoo Finance chart v8)
 async function fetchPrice(ticker){
   const r = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`);
   const d = await r.json();
@@ -337,32 +337,42 @@ async function fetchPrice(ticker){
     market_cap_str: d.market_cap_str, company_name: d.company_name,
     sector: d.sector, industry: d.industry,
     sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
+    dps_from_chart: d.dps_from_chart || null,
   };
 }
 
 // Ambil fundamental via Claude web search (Yahoo quoteSummary diblokir dari server)
-async function fetchFundamental(ticker, price){
+// Fundamental via Claude web search — satu-satunya sumber yang bisa diakses dari Vercel
+// Yahoo Finance fundamental endpoint semua diblokir dari IP server Vercel
+async function fetchFundamental(ticker, price, dpsFromChart){
   const txt = await callClaude([{role:'user', content:
-`Search for fundamental financial data of ${ticker}.JK stock IDX Indonesia.
-Search: "${ticker} IDX fundamental EPS PER PBV ROE book value 2024 2025"
-Also search: "site:idx.co.id ${ticker}" OR "stockbit ${ticker} fundamental"
+`Search for CURRENT fundamental financial data of ${ticker}.JK IDX Indonesia stock.
+Run these searches:
+1. "${ticker} EPS laba per saham laporan keuangan 2024 IDX"
+2. "${ticker} book value equity per share ROE 2024"
+3. "${ticker}.JK key statistics ratios PER PBV beta"
 
-Current price: Rp ${price}
+Harga saat ini: Rp ${price}
+${dpsFromChart ? `Dividen per saham dari data chart: Rp ${dpsFromChart}` : ''}
 
-Return ONLY JSON (null if not found):
-{"eps_ttm":<Rp float|null>,"eps_growth_rate":<% float|null>,"book_value_per_share":<Rp float|null>,"dps":<Rp float|null>,"dividend_yield":<% float|null>,"dividend_growth_rate":<% float|null>,"roe":<% float|null>,"roa":<% float|null>,"net_margin":<% float|null>,"revenue_growth":<% float|null>,"debt_to_equity":<float|null>,"current_ratio":<float|null>,"pe_ratio":<float|null>,"pb_ratio":<float|null>,"beta":<float|null>,"cost_of_equity":<% float|null>}`
+PENTING: EPS dan Book Value dalam Rupiah per saham (per lembar saham), BUKAN dalam miliar.
+Misalnya BBCA: EPS sekitar 500-600, Book Value sekitar 3000-4000, ROE sekitar 20-25%.
+
+Return ONLY valid JSON (gunakan null jika benar-benar tidak ada data):
+{"eps_ttm":<float>,"eps_growth_rate":<float %>,"book_value_per_share":<float>,"dps":<float>,"dividend_yield":<float %>,"dividend_growth_rate":<float %>,"roe":<float %>,"roa":<float %>,"net_margin":<float %>,"revenue_growth":<float %>,"debt_to_equity":<float>,"current_ratio":<float>,"pe_ratio":<float>,"pb_ratio":<float>,"beta":<float>,"cost_of_equity":<float %>}`
   }], true, 700);
   try {
     const d = parseJSON(txt);
-    // Hitung cost of equity jika tidak ada
-    if(!d.cost_of_equity && d.beta) d.cost_of_equity = parseFloat((6.5 + d.beta*5.5).toFixed(2));
-    if(!d.cost_of_equity) d.cost_of_equity = 11.0;
-    // Hitung PE/PB manual jika tidak ada
-    if(!d.pe_ratio && d.eps_ttm && d.eps_ttm > 0) d.pe_ratio = parseFloat((price/d.eps_ttm).toFixed(2));
-    if(!d.pb_ratio && d.book_value_per_share && d.book_value_per_share > 0) d.pb_ratio = parseFloat((price/d.book_value_per_share).toFixed(2));
+    // Override DPS dengan data real dari chart jika ada
+    if(dpsFromChart && dpsFromChart > 0) d.dps = dpsFromChart;
+    // Hitung turunan
+    if(!d.cost_of_equity) d.cost_of_equity = d.beta ? parseFloat((6.5 + d.beta*5.5).toFixed(2)) : 11.0;
+    if(!d.pe_ratio  && d.eps_ttm > 0)              d.pe_ratio  = parseFloat((price/d.eps_ttm).toFixed(2));
+    if(!d.pb_ratio  && d.book_value_per_share > 0) d.pb_ratio  = parseFloat((price/d.book_value_per_share).toFixed(2));
+    if(!d.dividend_yield && d.dps > 0 && price > 0) d.dividend_yield = parseFloat((d.dps/price*100).toFixed(2));
     return d;
   } catch {
-    return { cost_of_equity: 11.0 };
+    return { cost_of_equity: 11.0, dps: dpsFromChart || null };
   }
 }
 
@@ -505,7 +515,7 @@ async function runAnalysis(){
 
     setTxt('Mengambil fundamental via web search...','EPS · ROE · BV · PER · Call 2/4');
     setStep(1);
-    const F=await fetchFundamental(ticker, P.price);
+    const F=await fetchFundamental(ticker, P.price, P.dps_from_chart);
 
     setTxt('Menghitung harga wajar...','Graham · DDM · PER · PBV');
     setStep(1);

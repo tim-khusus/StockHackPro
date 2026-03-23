@@ -263,10 +263,10 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
     <div class="loading-text" id="loadingText">Memulai analisa...</div>
     <div class="loading-sub" id="loadingSub">Mengambil data dari internet</div>
     <div class="loading-steps">
-      <div class="loading-step" id="step1">▸ [1/4] Harga real-time — Yahoo Finance Chart</div>
-      <div class="loading-step" id="step2">▸ [2/4] Fundamental — EPS · ROE · Book Value · PER</div>
-      <div class="loading-step" id="step3">▸ [3/4] Bandarmologi — Foreign Flow · Broker · Volume</div>
-      <div class="loading-step" id="step4">▸ [4/4] Rekomendasi AI — BUY / SELL / HOLD</div>
+      <div class="loading-step" id="step1">▸ [1/2] Harga real-time — Yahoo Finance (tanpa AI)</div>
+      <div class="loading-step" id="step2">▸ ────────────────────────────────────────────────</div>
+      <div class="loading-step" id="step3">▸ [2/2] AI — Fundamental · Bandarmologi · Rekomendasi</div>
+      <div class="loading-step" id="step4">▸ Kalkulasi harga wajar + render hasil...</div>
       <div class="loading-step" id="step5" style="display:none;"></div>
     </div>
   </div>
@@ -341,163 +341,108 @@ async function fetchPrice(ticker){
   };
 }
 
-// Ambil fundamental via Claude web search (Yahoo quoteSummary diblokir dari server)
-// Fundamental via Claude web search — satu-satunya sumber yang bisa diakses dari Vercel
-// Yahoo Finance fundamental endpoint semua diblokir dari IP server Vercel
-async function fetchFundamental(ticker, price, dpsFromChart){
-  const txt = await callClaude([{role:'user', content:
-`Search for CURRENT fundamental financial data of ${ticker}.JK IDX Indonesia stock.
-Run these searches:
-1. "${ticker} EPS laba per saham laporan keuangan 2024 IDX"
-2. "${ticker} book value equity per share ROE 2024"
-3. "${ticker}.JK key statistics ratios PER PBV beta"
-
-Harga saat ini: Rp ${price}
-${dpsFromChart ? `Dividen per saham dari data chart: Rp ${dpsFromChart}` : ''}
-
-PENTING: EPS dan Book Value dalam Rupiah per saham (per lembar saham), BUKAN dalam miliar.
-Misalnya BBCA: EPS sekitar 500-600, Book Value sekitar 3000-4000, ROE sekitar 20-25%.
-
-Return ONLY valid JSON (gunakan null jika benar-benar tidak ada data):
-{"eps_ttm":<float>,"eps_growth_rate":<float %>,"book_value_per_share":<float>,"dps":<float>,"dividend_yield":<float %>,"dividend_growth_rate":<float %>,"roe":<float %>,"roa":<float %>,"net_margin":<float %>,"revenue_growth":<float %>,"debt_to_equity":<float>,"current_ratio":<float>,"pe_ratio":<float>,"pb_ratio":<float>,"beta":<float>,"cost_of_equity":<float %>}`
-  }], true, 700);
-  try {
-    const d = parseJSON(txt);
-    // Override DPS dengan data real dari chart jika ada
-    if(dpsFromChart && dpsFromChart > 0) d.dps = dpsFromChart;
-    // Hitung turunan
-    if(!d.cost_of_equity) d.cost_of_equity = d.beta ? parseFloat((6.5 + d.beta*5.5).toFixed(2)) : 11.0;
-    if(!d.pe_ratio  && d.eps_ttm > 0)              d.pe_ratio  = parseFloat((price/d.eps_ttm).toFixed(2));
-    if(!d.pb_ratio  && d.book_value_per_share > 0) d.pb_ratio  = parseFloat((price/d.book_value_per_share).toFixed(2));
-    if(!d.dividend_yield && d.dps > 0 && price > 0) d.dividend_yield = parseFloat((d.dps/price*100).toFixed(2));
-    return d;
-  } catch {
-    return { cost_of_equity: 11.0, dps: dpsFromChart || null };
-  }
-}
-
-// ══════════════════════════════════════
-// Harga Wajar — pure JS, no API call
-// ══════════════════════════════════════
-function calcFairValue(p,f){
-  const res={};
-  if(f.eps_ttm>0&&f.book_value_per_share>0){
-    const g=Math.sqrt(22.5*f.eps_ttm*f.book_value_per_share);
-    res.graham={price:Math.round(g),method:'Graham Number',abbr:'GRAHAM',weight:.25,formula:`√(22.5 × EPS ${fmt(f.eps_ttm)} × BV ${fmt(f.book_value_per_share)})`};
-  }
-  if(f.dps>0&&f.cost_of_equity){
-    const ke=(f.cost_of_equity||11)/100,gr=Math.min((f.dividend_growth_rate||5)/100,ke-.02);
-    if(ke>gr){const d1=f.dps*(1+gr),ddm=d1/(ke-gr);res.ddm={price:Math.round(ddm),method:'Dividend Discount Model',abbr:'DDM',weight:.20,formula:`D₁=${f.dps.toFixed(0)}×(1+${(gr*100).toFixed(1)}%)/(Ke ${(ke*100).toFixed(1)}%−g ${(gr*100).toFixed(1)}%)`};}
-  }
-  if(f.eps_ttm>0){
-    const gr2=f.eps_growth_rate||10,fp=Math.max(8,Math.min(gr2,30));
-    res.per={price:Math.round(f.eps_ttm*fp),method:'PER Berbasis Pertumbuhan',abbr:'PER',weight:.30,formula:`EPS ${fmt(f.eps_ttm)} × PER Wajar ${fp.toFixed(1)}x (growth ${gr2.toFixed(1)}%)`};
-  }
-  if(f.book_value_per_share>0&&f.roe){
-    const ke2=(f.cost_of_equity||11)/100,fp2=Math.max(.5,f.roe/100/ke2);
-    res.pbv={price:Math.round(f.book_value_per_share*fp2),method:'PBV Berbasis ROE',abbr:'PBV',weight:.25,formula:`BV ${fmt(f.book_value_per_share)} × PBV Wajar ${fp2.toFixed(2)}x (ROE ${f.roe.toFixed(1)}%÷Ke ${(ke2*100).toFixed(1)}%)`};
-  }
-  const methods=Object.values(res);
-  if(!methods.length)return null;
-  const tw=methods.reduce((s,m)=>s+m.weight,0);
-  const cons=methods.reduce((s,m)=>s+m.price*m.weight,0)/tw;
-  const up=((cons-p.price)/p.price*100);
-  const mos=((cons-p.price)/cons*100);
-  return{methods:res,consensus:Math.round(cons),upside:up.toFixed(1),status:up>15?'undervalue':up<-15?'overvalue':'fair',mos:mos.toFixed(1),count:methods.length};
-}
-
-// ══════════════════════════════════════
-// CALL 2 — Bandarmologi
-// Sessions historis REAL sudah ada dari /api/price — Claude hanya interpretasi bandar/foreign
-async function fetchBandarmology(ticker, p){
-  const realSessions = (p.sessions || []).slice(0, 10);
-  const sessStr = realSessions.map(s =>
-    `${s.session}(${s.date}):vol=${s.vol},price=${s.price},chg=${s.change_pct}%`
-  ).join(' | ');
+// ═══════════════════════════════════════════════════════
+// SATU CLAUDE CALL — Fundamental + Bandarmologi + Analisa
+// Menggabungkan 3 call sebelumnya → hemat token 70%
+// ═══════════════════════════════════════════════════════
+async function fetchAllAnalysis(ticker, p, dpsFromChart){
+  const pos52 = (p.week52_high && p.week52_low)
+    ? (((p.price-p.week52_low)/(p.week52_high-p.week52_low))*100).toFixed(0)+'%' : 'N/A';
+  const rsiEst = (p.week52_high && p.week52_low)
+    ? Math.round(30+(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*50)) : 50;
+  const sessStr = (p.sessions||[]).slice(0,10).map(s=>
+    `${s.session}(${s.date}):v=${(s.vol/1e6).toFixed(1)}M,p=${s.price},c=${s.change_pct}%`
+  ).join(' ');
 
   const txt = await callClaude([{role:'user', content:
-`Search: "${ticker} foreign net buy sell IDX 2025" dan "${ticker} broker summary IDX"
-Saham: ${ticker}.JK | Harga REAL: Rp ${p.price} | Vol: ${p.volume||0} | Avg30D: ${p.avg_volume||0}
-Historis REAL 10 sesi: ${sessStr||'belum tersedia'}
+`Search IDX Indonesia data for ${ticker}.JK:
+1. "${ticker} EPS book value ROE laporan keuangan 2024"
+2. "${ticker} foreign net buy sell IDX asing 2025"
 
-Interpretasi bandarmologi. Return JSON only (no markdown):
-{"ff_today":<float|null>,"ff_5d":<float|null>,"ff_30d":<float|null>,"ff_trend":"net_buy"|"net_sell"|"neutral"|"unknown","foreign_own_pct":<float|null>,"bb":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"bs":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"broker_real":<bool>,"buyer_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","seller_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","block_trades":<int|null>,"unusual_vol":<bool>,"unusual_desc":<str|null>,"vol_trend":"increasing"|"decreasing"|"stable","pv_div":<bool>,"div_type":"bullish_divergence"|"bearish_divergence"|"none","vwap":"above_vwap"|"below_vwap"|"at_vwap","adl":"positive"|"negative"|"neutral","score":<0-100>,"phase":"accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral","wyckoff":<str|null>,"wyckoff_desc":<str|null>,"inst_sig":"accumulation"|"distribution"|"neutral","cvp":<str|null>,"sources":["<src>"],"confidence":"high"|"medium"|"low","summary":"<3 kalimat: broker dominan, foreign flow, saran trader>"}`
-  }], true, 900);
+Data REAL Yahoo Finance:
+Harga: Rp ${p.price} | Chg: ${p.change_pct}% | Vol: ${(p.volume/1e6).toFixed(1)}M | Avg30D: ${((p.avg_volume||0)/1e6).toFixed(1)}M
+52W: Rp ${fmt(p.week52_low)}–${fmt(p.week52_high)} | Pos: ${pos52} | RSI≈${rsiEst}
+Sesi historis REAL: ${sessStr}
+${dpsFromChart?`DPS dari chart events: Rp ${dpsFromChart}`:''}
 
-  const r = parseJSON(txt);
-  return {
+Return ONE JSON object dengan key "f", "bm", "a" (no markdown):
+{"f":{"eps_ttm":<Rp/saham>,"eps_growth_rate":<% >,"book_value_per_share":<Rp/saham>,"dps":${dpsFromChart||'<Rp>'},"dividend_yield":<% >,"roe":<% >,"roa":<% >,"net_margin":<% >,"debt_to_equity":<x>,"current_ratio":<x>,"pe_ratio":<x>,"pb_ratio":<x>,"beta":<x>,"cost_of_equity":<% >},"bm":{"ff_30d":<bn IDR>,"ff_trend":"net_buy"|"net_sell"|"neutral"|"unknown","foreign_own_pct":<% >,"bb":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"bs":[{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>},{"c":"<kode>","n":"<nama>","l":<lot>,"v":<bn>}],"broker_real":<bool>,"buyer_type":"asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown","score":<0-100>,"phase":"accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral","wyckoff":<str|null>,"wyckoff_desc":<str|null>,"inst_sig":"accumulation"|"distribution"|"neutral","unusual_vol":<bool>,"unusual_desc":<str|null>,"pv_div":<bool>,"div_type":"bullish_divergence"|"bearish_divergence"|"none","vwap":"above_vwap"|"below_vwap"|"at_vwap","adl":"positive"|"negative"|"neutral","vol_trend":"increasing"|"decreasing"|"stable","confidence":"high"|"medium"|"low","summary":"<3 kalimat: broker, foreign flow, saran>"},"a":{"keputusan":"BUY"|"SELL"|"HOLD","confidence":<60-95>,"target_harga":"Rp <n>","stop_loss":"Rp <n>","potensi_gain":"<+X%>","risk_level":<1-10>,"teknikal":{"RSI":"<i>","Posisi 52W":"<i>","Momentum":"<i>","Volume":"<i>","Support":"Rp <n>","Resistance":"Rp <n>","Tren":"<i>"},"sentimen":"Bullish"|"Bearish"|"Netral","katalis":["<k1>","<k2>","<k3>"],"risiko":["<r1>","<r2>"],"analisa":"<3 kalimat: harga Rp ${p.price}, harga wajar, bandar, target, stop loss>"}}`
+  }], true, 1600);
+
+  const d = parseJSON(txt);
+  if (!d.f || !d.bm || !d.a) throw new Error('Respons tidak lengkap, coba lagi');
+
+  // Post-process fundamental
+  const f = d.f;
+  if(dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
+  if(!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5+f.beta*5.5).toFixed(2)) : 11.0;
+  if(!f.pe_ratio  && f.eps_ttm > 0)              f.pe_ratio  = parseFloat((p.price/f.eps_ttm).toFixed(2));
+  if(!f.pb_ratio  && f.book_value_per_share > 0) f.pb_ratio  = parseFloat((p.price/f.book_value_per_share).toFixed(2));
+  if(!f.dividend_yield && f.dps > 0)             f.dividend_yield = parseFloat((f.dps/p.price*100).toFixed(2));
+
+  // Build full bandar object
+  const r = d.bm;
+  const bm = {
     avg_vol_10d: p.avg_volume, avg_vol_30d: p.avg_vol_30d || p.avg_volume,
-    vol_sessions: realSessions.length > 0 ? realSessions : [],
-    foreign_net_buy_today: r.ff_today, foreign_net_buy_5d: r.ff_5d, foreign_net_buy_30d: r.ff_30d,
+    vol_sessions: (p.sessions||[]).slice(0,10),
+    foreign_net_buy_today: null, foreign_net_buy_5d: null, foreign_net_buy_30d: r.ff_30d,
     foreign_flow_trend: r.ff_trend, foreign_ownership_pct: r.foreign_own_pct,
-    top_broker_buy:  (r.bb||[]).map(x=>({broker:x.c, name:x.n, net_buy_lot:x.l,  value_bn:x.v})),
-    top_broker_sell: (r.bs||[]).map(x=>({broker:x.c, name:x.n, net_sell_lot:x.l, value_bn:x.v})),
-    broker_data_available: r.broker_real, dominant_buyer_type: r.buyer_type, dominant_seller_type: r.seller_type,
-    big_block_trades_today: r.block_trades, unusual_vol_detected: r.unusual_vol, unusual_vol_desc: r.unusual_desc,
-    vol_trend_10d: r.vol_trend, price_vol_divergence: r.pv_div, divergence_type: r.div_type,
-    vwap_relation: r.vwap, accumulation_distribution_line: r.adl,
+    top_broker_buy:  (r.bb||[]).map(x=>({broker:x.c,name:x.n,net_buy_lot:x.l,value_bn:x.v})),
+    top_broker_sell: (r.bs||[]).map(x=>({broker:x.c,name:x.n,net_sell_lot:x.l,value_bn:x.v})),
+    broker_data_available: r.broker_real, dominant_buyer_type: r.buyer_type,
     bandar_score: r.score, bandar_phase: r.phase,
     wyckoff_event: r.wyckoff, wyckoff_desc: r.wyckoff_desc,
-    institutional_signal: r.inst_sig, candle_volume_pattern: r.cvp,
-    data_sources_used: r.sources, data_confidence: r.confidence, bandar_summary: r.summary,
+    institutional_signal: r.inst_sig,
+    unusual_vol_detected: r.unusual_vol, unusual_vol_desc: r.unusual_desc,
+    price_vol_divergence: r.pv_div, divergence_type: r.div_type,
+    vwap_relation: r.vwap, accumulation_distribution_line: r.adl,
+    vol_trend_10d: r.vol_trend, data_confidence: r.confidence,
+    bandar_summary: r.summary,
+    data_sources_used: ['Web Search','IDX','Yahoo Chart'],
+    big_block_trades_today: null, candle_volume_pattern: null,
+    dominant_seller_type: 'unknown',
   };
+
+  return { f, bm, a: d.a };
 }
 
-// CALL 3 — Analisa Final AI (no web search, pure reasoning)
-async function fetchAnalysis(ticker,p,f,fv,bm){
-  const pos52=(p.week52_high&&p.week52_low)?(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*100).toFixed(0)+'%':'N/A';
-  const rsiEst=(p.week52_high&&p.week52_low)?Math.round(30+(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*50)):50;
-  const txt=await callClaude([{role:'user',content:
-`Analis saham IDX senior. Data ${ticker}.JK:
-Harga: Rp ${p.price} (${p.change_pct}%) | Vol: ${p.volume?(p.volume/1e6).toFixed(1)+'M':'N/A'} | 52W: ${fmt(p.week52_low)}-${fmt(p.week52_high)} | RSI≈${rsiEst} | Pos: ${pos52}
-Fundamental: EPS=${f.eps_ttm||'N/A'} ROE=${f.roe||'N/A'}% PER=${f.pe_ratio||'N/A'}x PBV=${f.pb_ratio||'N/A'}x
-FairValue: ${fv?`Rp ${fmt(fv.consensus)} (${fv.upside>0?'+':''}${fv.upside}%, ${fv.status})`:'N/A'}
-Bandar: score=${bm.score}/100 fase=${bm.bandar_phase} OBV=${bm.obvTrend} FF=${bm.foreign_flow_trend} volRatio=${bm.volRatio?.toFixed(2)}x
-
-Balas JSON saja:
-{"keputusan":"BUY"|"SELL"|"HOLD","confidence":<60-95>,"target_harga":"Rp <n>","stop_loss":"Rp <n>","potensi_gain":"<+X%>","risk_level":<1-10>,"teknikal":{"RSI":"<interp>","Posisi 52W":"<interp>","Momentum":"<interp>","Volume":"<interp>","Support":"Rp <n>","Resistance":"Rp <n>","Tren":"<interp>"},"sentimen":"Bullish"|"Bearish"|"Netral","katalis":["<k1>","<k2>","<k3>"],"risiko":["<r1>","<r2>"],"analisa":"<3 kalimat ringkas: harga, wajar, sinyal bandar, target, stop loss>"}`
-  }],false,800);
-  return parseJSON(txt);
-}
-
-// OBV + derived signals (pure JS)
-function calcBandarSignals(p,bm){
-  const sessions=bm.vol_sessions||[];
-  let obv=0; const obvH=[];
-  sessions.slice().reverse().forEach(s=>{
-    if((s.change_pct||0)>0.2) obv+=(s.vol||0);
-    else if((s.change_pct||0)<-0.2) obv-=(s.vol||0);
+// OBV + derived signals dari data sesi real (pure JS, no API)
+function calcBandarSignals(p, bm){
+  const sessions = bm.vol_sessions || [];
+  let obv = 0; const obvH = [];
+  sessions.slice().reverse().forEach(s => {
+    if((s.change_pct||0) > 0.2) obv += (s.vol||0);
+    else if((s.change_pct||0) < -0.2) obv -= (s.vol||0);
     obvH.push(obv);
   });
-  let obvTrend='sideways';
-  if(obvH.length>=6){
-    const e=obvH.slice(0,3).reduce((a,b)=>a+b,0)/3;
-    const l=obvH.slice(-3).reduce((a,b)=>a+b,0)/3;
-    obvTrend=l>e*1.05?'rising':l<e*0.95?'falling':'sideways';
-  } else { obvTrend=obv>0?'rising':obv<0?'falling':'sideways'; }
-  const avgVol=bm.avg_vol_30d||p.avg_volume||1;
-  const curVol=(sessions[0]?.vol)||p.volume||0;
-  const volRatio=avgVol>0?curVol/avgVol:1;
-  const v5r=sessions.slice(0,5).reduce((s,x)=>s+(x.vol||0),0)/5;
-  const v5p=sessions.slice(5,10).reduce((s,x)=>s+(x.vol||0),0)/5;
-  const volTrend5d=v5p>0?((v5r-v5p)/v5p*100).toFixed(1):null;
-  const priceUp=p.change_pct>0, volHigh=volRatio>1.25;
-  const pvSignal=priceUp&&volHigh?'bullish_confirmation':!priceUp&&volHigh?'bearish_confirmation':priceUp?'weak_rally':'weak_decline';
-  let accumCount=0,distribCount=0;
-  sessions.forEach(s=>{
-    const vr=avgVol>0?(s.vol||0)/avgVol:1;
-    if((s.change_pct||0)>0.3&&vr>1.1)accumCount++;
-    else if((s.change_pct||0)<-0.3&&vr>1.1)distribCount++;
+  let obvTrend = 'sideways';
+  if(obvH.length >= 6){
+    const e = obvH.slice(0,3).reduce((a,b)=>a+b,0)/3;
+    const l = obvH.slice(-3).reduce((a,b)=>a+b,0)/3;
+    obvTrend = l>e*1.05?'rising':l<e*0.95?'falling':'sideways';
+  } else { obvTrend = obv>0?'rising':obv<0?'falling':'sideways'; }
+  const avgVol = bm.avg_vol_30d || p.avg_volume || 1;
+  const curVol = (sessions[0]?.vol) || p.volume || 0;
+  const volRatio = avgVol > 0 ? curVol/avgVol : 1;
+  const v5r = sessions.slice(0,5).reduce((s,x)=>s+(x.vol||0),0)/5;
+  const v5p = sessions.slice(5,10).reduce((s,x)=>s+(x.vol||0),0)/5;
+  const volTrend5d = v5p > 0 ? ((v5r-v5p)/v5p*100).toFixed(1) : null;
+  const priceUp = p.change_pct > 0, volHigh = volRatio > 1.25;
+  const pvSignal = priceUp&&volHigh?'bullish_confirmation':!priceUp&&volHigh?'bearish_confirmation':priceUp?'weak_rally':'weak_decline';
+  let accumCount=0, distribCount=0;
+  sessions.forEach(s => {
+    const vr = avgVol>0?(s.vol||0)/avgVol:1;
+    if((s.change_pct||0)>0.3&&vr>1.1) accumCount++;
+    else if((s.change_pct||0)<-0.3&&vr>1.1) distribCount++;
   });
-  const calcScore=sessions.length>0?Math.round(50+(accumCount-distribCount)/sessions.length*50):50;
-  const score=Math.min(100,Math.max(0,Math.round((calcScore+(bm.bandar_score||50))/2)));
-  const verdict=score>=65?'akumulasi':score<=35?'distribusi':'netral';
-  const ff30=bm.foreign_net_buy_30d;
-  const foreignStrength=ff30==null?'netral':ff30>100?'kuat beli':ff30>0?'ringan beli':ff30<-100?'kuat jual':'ringan jual';
-  return{...bm,obvTrend,volRatio,volTrend5d,pvSignal,score,verdict,foreignStrength,accumCount,distribCount};
+  const calcScore = sessions.length>0 ? Math.round(50+(accumCount-distribCount)/sessions.length*50) : 50;
+  const score = Math.min(100,Math.max(0,Math.round((calcScore+(bm.bandar_score||50))/2)));
+  const verdict = score>=65?'akumulasi':score<=35?'distribusi':'netral';
+  const ff30 = bm.foreign_net_buy_30d;
+  const foreignStrength = ff30==null?'netral':ff30>100?'kuat beli':ff30>0?'ringan beli':ff30<-100?'kuat jual':'ringan jual';
+  return {...bm, obvTrend, volRatio, volTrend5d, pvSignal, score, verdict, foreignStrength, accumCount, distribCount};
 }
 
-// ══════════════════════════════════════
 // MAIN — 3 lean API calls, ~7K token each
 // ══════════════════════════════════════
 async function runAnalysis(){
@@ -509,26 +454,20 @@ async function runAnalysis(){
   document.getElementById('result').style.display='none';
   setStep(0);
   try{
-    setTxt('Mengambil harga real-time...','Yahoo Finance Chart · '+ticker+'.JK');
+    // CALL 1: Harga real dari Yahoo Finance chart (no Claude)
+    setTxt('Mengambil harga real-time...','Yahoo Finance · '+ticker+'.JK · no AI');
     setStep(0);
     const P=await fetchPrice(ticker);
 
-    setTxt('Mengambil fundamental via web search...','EPS · ROE · BV · PER · Call 2/4');
-    setStep(1);
-    const F=await fetchFundamental(ticker, P.price, P.dps_from_chart);
-
-    setTxt('Menghitung harga wajar...','Graham · DDM · PER · PBV');
-    setStep(1);
-    const FV=calcFairValue(P,F);
-
-    setTxt('Analisa bandarmologi...','Call 3/4 · Foreign Flow · Broker · Volume');
+    // CALL 2: Fundamental + Bandarmologi + Analisa — 1 Claude call saja
+    setTxt('Analisa AI...','Fundamental · Bandarmologi · Rekomendasi · 1 call');
     setStep(2);
-    const bmRaw=await fetchBandarmology(ticker,P);
-    const BM=calcBandarSignals(P,bmRaw);
+    const {f:F, bm:bmRaw, a:A}=await fetchAllAnalysis(ticker,P,P.dps_from_chart);
 
-    setTxt('Menyimpulkan rekomendasi AI...','Call 4/4 · BUY / SELL / HOLD');
+    // Pure JS — tidak pakai token
     setStep(3);
-    const A=await fetchAnalysis(ticker,P,F,FV,BM);
+    const FV=calcFairValue(P,F);
+    const BM=calcBandarSignals(P,bmRaw);
 
     setStep(4);
     renderResult(ticker,P,F,FV,BM,A);

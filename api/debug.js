@@ -1,6 +1,4 @@
-// api/debug.js — Test crumb + fundamental
-// Akses: /api/debug?ticker=BBCA  — HAPUS setelah debug!
-
+// api/debug.js — test berbagai endpoint alternatif
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const { ticker = 'BBCA' } = req.query;
@@ -12,53 +10,58 @@ export default async function handler(req, res) {
   };
   const out = { ticker: sym, time: new Date().toISOString() };
 
-  // Test crumb
-  try {
-    const homeRes = await fetch('https://finance.yahoo.com/', {
-      headers: { ...H, 'Accept': 'text/html,*/*' }, redirect: 'follow'
-    });
-    const rawCookies = homeRes.headers.getSetCookie?.() || [];
-    let cookieStr = rawCookies.length
-      ? rawCookies.map(c=>c.split(';')[0]).join('; ')
-      : (homeRes.headers.get('set-cookie')||'').split(/,(?=[^ ])/).map(c=>c.split(';')[0]).join('; ');
-    out.cookie_count = rawCookies.length;
-    out.cookie_str_len = cookieStr.length;
-
-    const crumbRes = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
-      headers: { ...H, 'Cookie': cookieStr }
-    });
-    out.crumb_status = crumbRes.status;
-    const crumb = (await crumbRes.text()).trim();
-    out.crumb = crumb.slice(0, 30);
-
-    if (crumb && crumb.length > 4 && !crumb.startsWith('{')) {
-      // Test fundamental dengan crumb
-      const MODS = 'summaryDetail,defaultKeyStatistics,financialData';
-      const fRes = await fetch(
-        `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=${MODS}&crumb=${encodeURIComponent(crumb)}&formatted=false`,
-        { headers: { ...H, 'Cookie': cookieStr } }
-      );
-      out.fundamental_status = fRes.status;
-      if (fRes.ok) {
-        const fj = await fRes.json();
-        const r = fj?.quoteSummary?.result?.[0] || {};
-        const ks = r.defaultKeyStatistics || {};
-        const fd = r.financialData || {};
-        const sd = r.summaryDetail || {};
-        out.eps      = ks.trailingEps;
-        out.bvps     = ks.bookValue;
-        out.beta     = ks.beta;
-        out.roe      = fd.returnOnEquity;
-        out.pe       = sd.trailingPE || ks.trailingPE;
-        out.pb       = ks.priceToBook;
-        out.netMargin= fd.profitMargins;
-        out.de       = fd.debtToEquity;
-        out.divRate  = sd.dividendRate;
+  const tryFetch = async (label, url, headers=H) => {
+    try {
+      const r = await fetch(url, { headers });
+      out[label+'_status'] = r.status;
+      if (r.ok) {
+        const t = await r.text();
+        out[label+'_preview'] = t.slice(0, 300);
+        try { return JSON.parse(t); } catch { return null; }
       } else {
-        out.fundamental_body = await fRes.text().then(t=>t.slice(0,200));
+        out[label+'_err'] = await r.text().then(t=>t.slice(0,150));
       }
-    }
-  } catch(e) { out.error = e.message; }
+    } catch(e) { out[label+'_catch'] = e.message; }
+    return null;
+  };
+
+  // 1. Chart v8 — sudah terbukti berhasil
+  const chart = await tryFetch('chart',
+    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&modules=financialData`);
+  if (chart?.chart?.result?.[0]?.meta) {
+    const meta = chart.chart.result[0].meta;
+    out.chart_price = meta.regularMarketPrice;
+    out.chart_52whi = meta.fiftyTwoWeekHigh;
+    // cek apakah ada financialData di dalam chart
+    out.chart_financialData = JSON.stringify(chart.chart.result[0].financialData || 'not in chart').slice(0,100);
+  }
+
+  // 2. Yahoo Finance fundamentals via spark endpoint (tidak butuh crumb)
+  await tryFetch('spark',
+    `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${sym}&range=1y&interval=1mo`);
+
+  // 3. Yahoo v11 quoteSummary (terkadang masih bisa tanpa crumb di beberapa endpoint)
+  await tryFetch('v11_nocrumb',
+    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${sym}?modules=defaultKeyStatistics,financialData&formatted=false`);
+
+  // 4. Alpha Vantage — free, no crumb (butuh API key tapi ada free tier)
+  // out.alphavantage = 'requires ALPHA_VANTAGE_KEY env var';
+
+  // 5. FMP (Financial Modeling Prep) — free tier 250 req/day
+  await tryFetch('fmp_profile',
+    `https://financialmodelingprep.com/api/v3/profile/${sym.replace('.JK','')}.JK?apikey=demo`);
+
+  // 6. FMP ratios
+  await tryFetch('fmp_ratios',
+    `https://financialmodelingprep.com/api/v3/ratios-ttm/${sym.replace('.JK','')}.JK?apikey=demo`);
+
+  // 7. Yahoo quote v6 (mobile endpoint, kadang tidak perlu crumb)
+  await tryFetch('quote_v6',
+    `https://query2.finance.yahoo.com/v6/finance/quote?symbols=${sym}`);
+
+  // 8. Yahoo Finance search endpoint (public)
+  await tryFetch('search',
+    `https://query1.finance.yahoo.com/v1/finance/search?q=${sym}&quotesCount=1&newsCount=0`);
 
   return res.status(200).json(out);
 }

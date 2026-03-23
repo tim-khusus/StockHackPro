@@ -1,9 +1,13 @@
 {
-  "name": "idx-pro-terminal",
-  "version": "3.0.0",
-  "type": "module",
-  "dependencies": {},
+  "name": "saham-ai",
+  "version": "1.0.0",
+  "description": "Analisa Saham Indonesia dengan AI - IDX",
+  "private": true,
   "engines": {
-    "node": "24.x"
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
   }
 }

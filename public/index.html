@@ -1,135 +1,1138 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IDX Pro Terminal | AI Analysis</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAHAM.AI — Analisa Lengkap IDX</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050a0f;--surface:#0a1520;--surface2:#0f1e2e;--border:#1a3045;
+  --accent:#00d4ff;--accent2:#00ff88;
+  --sell:#ff4560;--buy:#00e676;--hold:#ffb300;
+  --text:#e0f0ff;--muted:#4a7a9b;--glow:0 0 20px rgba(0,212,255,0.15);
+  --gold:#f5c842;--purple:#a78bfa;--orange:#ff8c42;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;}
+.container{max-width:1160px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
+
+header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;}
+.logo{font-size:26px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo span{font-weight:300;-webkit-text-fill-color:var(--muted);font-size:12px;display:block;letter-spacing:3px;text-transform:uppercase;margin-top:-3px;}
+.live-badge{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);padding:6px 14px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:1px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+.search-section{padding:32px 0 24px;}
+.search-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;}
+.search-row{display:flex;gap:12px;align-items:stretch;}
+.search-input-wrap{flex:1;position:relative;}
+.ticker-prefix{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:18px;pointer-events:none;}
+.search-input{width:100%;background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;padding:16px 20px 16px 44px;border-radius:12px;outline:none;text-transform:uppercase;letter-spacing:2px;transition:border-color .2s,box-shadow .2s;}
+.search-input:focus{border-color:var(--accent);box-shadow:var(--glow);}
+.search-input::placeholder{color:var(--muted);letter-spacing:1px;}
+.analyze-btn{background:linear-gradient(135deg,#0066aa,var(--accent));border:none;color:white;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:16px 28px;border-radius:12px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:transform .15s,box-shadow .2s;white-space:nowrap;}
+.analyze-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,212,255,.3);}
+.analyze-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.quick-picks{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+.qp-label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.quick-tag{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .15s;letter-spacing:1px;}
+.quick-tag:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.05);}
+
+#loading{display:none;padding:48px 0;text-align:center;}
+.loader-ring{width:56px;height:56px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 20px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;}
+.loading-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--border);letter-spacing:1px;margin-bottom:16px;}
+.loading-steps{display:flex;flex-direction:column;gap:7px;align-items:center;}
+.loading-step{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--border);letter-spacing:1px;transition:color .3s;}
+.loading-step.active{color:var(--accent2);}
+.loading-step.done{color:var(--muted);}
+
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;}
+.badge-green{background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);color:var(--buy);}
+.badge-gold{background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.25);color:var(--gold);}
+.badge-orange{background:rgba(255,140,66,.08);border:1px solid rgba(255,140,66,.25);color:var(--orange);}
+.badge-purple{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);color:var(--purple);}
+
+#result{display:none;padding-bottom:60px;}
+.verdict-card{border-radius:16px;padding:28px;margin-bottom:18px;position:relative;overflow:hidden;border:1.5px solid;}
+.verdict-card.buy{background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,230,118,.03));border-color:rgba(0,230,118,.4);}
+.verdict-card.sell{background:linear-gradient(135deg,rgba(255,69,96,.08),rgba(255,69,96,.03));border-color:rgba(255,69,96,.4);}
+.verdict-card.hold{background:linear-gradient(135deg,rgba(255,179,0,.08),rgba(255,179,0,.03));border-color:rgba(255,179,0,.4);}
+.verdict-glow{position:absolute;top:-50%;right:-10%;width:280px;height:280px;border-radius:50%;opacity:.05;filter:blur(60px);}
+.buy .verdict-glow{background:var(--buy);}.sell .verdict-glow{background:var(--sell);}.hold .verdict-glow{background:var(--hold);}
+.verdict-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.stock-ticker-big{font-size:38px;font-weight:800;letter-spacing:-2px;line-height:1;font-family:'JetBrains Mono',monospace;}
+.stock-name{font-size:13px;color:var(--muted);margin-top:4px;font-weight:400;}
+.verdict-badge{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.verdict-label{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.buy .verdict-label{color:var(--buy);}.sell .verdict-label{color:var(--sell);}.hold .verdict-label{color:var(--hold);}
+.confidence-wrap{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);text-align:right;}
+.confidence-bar-outer{width:120px;height:5px;background:var(--border);border-radius:3px;margin:5px 0;overflow:hidden;}
+.confidence-bar-inner{height:100%;border-radius:3px;width:0;transition:width 1.2s ease;}
+.buy .confidence-bar-inner{background:var(--buy);}.sell .confidence-bar-inner{background:var(--sell);}.hold .confidence-bar-inner{background:var(--hold);}
+.price-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07);flex-wrap:wrap;}
+.price-now{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;color:var(--text);line-height:1;}
+.price-change{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;padding:3px 9px;border-radius:6px;}
+.price-change.up{background:rgba(0,230,118,.15);color:var(--buy);}
+.price-change.down{background:rgba(255,69,96,.15);color:var(--sell);}
+.price-change.flat{background:rgba(255,255,255,.05);color:var(--muted);}
+.price-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:7px;}
+.metric-value{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;line-height:1;}
+.metric-value.positive{color:var(--buy);}.metric-value.negative{color:var(--sell);}.metric-value.neutral{color:var(--text);}.metric-value.gold{color:var(--gold);}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+
+/* ── FAIR VALUE ── */
+.fairvalue-section{background:var(--surface);border:1.5px solid rgba(245,200,66,.3);border-radius:16px;padding:24px;margin-bottom:18px;position:relative;overflow:hidden;}
+.fairvalue-section::before{content:'';position:absolute;top:-40%;right:-5%;width:220px;height:220px;border-radius:50%;background:var(--gold);opacity:.03;filter:blur(50px);pointer-events:none;}
+.fv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.fv-title{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;}
+.fv-verdict-label{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;padding:5px 13px;border-radius:8px;}
+.fv-undervalue{background:rgba(0,230,118,.15);color:var(--buy);border:1px solid rgba(0,230,118,.3);}
+.fv-overvalue{background:rgba(255,69,96,.15);color:var(--sell);border:1px solid rgba(255,69,96,.3);}
+.fv-fairvalue{background:rgba(255,179,0,.15);color:var(--hold);border:1px solid rgba(255,179,0,.3);}
+.fv-gauge-wrap{margin-bottom:20px;}
+.fv-gauge-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:6px;}
+.fv-gauge-track{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--buy) 0%,var(--hold) 45%,var(--sell) 100%);position:relative;margin-bottom:8px;}
+.fv-gauge-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 0 12px rgba(255,255,255,.6);transition:left 1.2s cubic-bezier(.34,1.56,.64,1);border:2px solid var(--bg);}
+.fv-gauge-price-label{position:absolute;top:-22px;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:white;white-space:nowrap;transition:left 1.2s cubic-bezier(.34,1.56,.64,1);}
+.fv-methods-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:18px;}
+.fv-method-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden;}
+.fv-method-card:hover{border-color:rgba(245,200,66,.3);}
+.fv-method-name{font-size:10px;text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:3px;}
+.fv-method-fullname{font-size:11px;color:var(--text);margin-bottom:10px;font-weight:600;}
+.fv-method-price{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--gold);line-height:1;margin-bottom:3px;}
+.fv-method-upside{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;margin-bottom:7px;}
+.fv-method-formula{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:7px;}
+.fv-method-tag{position:absolute;top:10px;right:10px;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:4px;letter-spacing:1px;font-weight:700;}
+.tag-low{background:rgba(0,230,118,.15);color:var(--buy);}
+.tag-high{background:rgba(255,69,96,.15);color:var(--sell);}
+.tag-fair{background:rgba(255,179,0,.15);color:var(--hold);}
+.mos-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:6px 0 4px;}
+.mos-fill{height:100%;border-radius:3px;transition:width 1.2s ease;}
+
+/* ── BANDARMOLOGY ── */
+.bandar-section{background:var(--surface);border:1.5px solid rgba(255,140,66,.35);border-radius:16px;padding:24px;margin-bottom:18px;position:relative;overflow:hidden;}
+.bandar-section::before{content:'';position:absolute;top:-40%;left:-5%;width:240px;height:240px;border-radius:50%;background:var(--orange);opacity:.04;filter:blur(55px);pointer-events:none;}
+.bandar-title-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.bandar-title{font-size:11px;color:var(--orange);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;}
+.bandar-subtitle{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px;}
+.bandar-verdict-pill{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;padding:5px 14px;border-radius:8px;letter-spacing:1px;white-space:nowrap;}
+.b-akkum{background:rgba(0,230,118,.15);color:var(--buy);border:1px solid rgba(0,230,118,.3);}
+.b-distr{background:rgba(255,69,96,.15);color:var(--sell);border:1px solid rgba(255,69,96,.3);}
+.b-netral{background:rgba(255,179,0,.15);color:var(--hold);border:1px solid rgba(255,179,0,.3);}
+
+.bandar-score-wrap{display:flex;align-items:center;gap:18px;margin-bottom:18px;flex-wrap:wrap;}
+.bandar-score-circle{width:76px;height:76px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid;flex-shrink:0;}
+.bandar-score-num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:800;line-height:1;}
+.bandar-score-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:2px;}
+.bandar-score-desc{flex:1;min-width:0;}
+.bandar-score-title{font-size:15px;font-weight:700;margin-bottom:3px;}
+.bandar-score-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.55;}
+
+/* Wyckoff phase indicator */
+.wyckoff-bar{display:flex;gap:3px;margin-bottom:16px;flex-wrap:wrap;}
+.wyckoff-phase{flex:1;min-width:60px;text-align:center;padding:7px 4px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border:1px solid var(--border);color:var(--muted);cursor:default;}
+.wyckoff-phase.active{font-weight:700;}
+.wp-acc1.active{background:rgba(0,230,118,.12);color:var(--buy);border-color:rgba(0,230,118,.4);}
+.wp-acc2.active{background:rgba(0,230,118,.18);color:var(--buy);border-color:rgba(0,230,118,.5);}
+.wp-markup.active{background:rgba(0,212,255,.12);color:var(--accent);border-color:rgba(0,212,255,.4);}
+.wp-distr.active{background:rgba(255,69,96,.12);color:var(--sell);border-color:rgba(255,69,96,.4);}
+.wp-markdown.active{background:rgba(255,69,96,.2);color:var(--sell);border-color:rgba(255,69,96,.6);}
+.wp-neutral.active{background:rgba(255,179,0,.1);color:var(--hold);border-color:rgba(255,179,0,.4);}
+
+.bandar-signals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px;margin-bottom:16px;}
+.bsc{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.bsc-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:5px;}
+.bsc-value{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;line-height:1;margin-bottom:4px;}
+.bsc-interp{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+
+/* Volume chart */
+.vol-chart{margin-bottom:16px;}
+.vol-chart-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;}
+.vol-bars{display:flex;align-items:flex-end;gap:5px;height:64px;padding-bottom:2px;}
+.vb{flex:1;border-radius:3px 3px 0 0;min-width:8px;transition:height .8s ease;position:relative;cursor:default;}
+.vb:hover .vb-tip{display:block;}
+.vb-tip{display:none;position:absolute;bottom:calc(100%+4px);left:50%;transform:translateX(-50%);background:#1a3045;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text);white-space:nowrap;z-index:10;}
+.vol-chart-labels{display:flex;gap:5px;margin-top:4px;}
+.vol-chart-label{flex:1;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-align:center;overflow:hidden;text-overflow:ellipsis;}
+
+/* Foreign flow bar */
+.ff-bar-wrap{margin-bottom:16px;}
+.ff-bar-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden;position:relative;margin:6px 0;}
+.ff-bar-fill{height:100%;border-radius:4px;transition:width 1.2s ease;}
+.ff-center{position:absolute;top:0;left:50%;width:2px;height:100%;background:rgba(255,255,255,.3);}
+
+.alert-box{border-radius:8px;padding:10px 13px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;}
+.alert-anomaly{background:rgba(255,140,66,.08);border:1px solid rgba(255,140,66,.3);color:var(--orange);}
+.alert-divergence{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);color:var(--purple);}
+.alert-foreign{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25);color:var(--accent);}
+
+.bandar-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:#8ab8d4;line-height:1.7;padding:13px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--orange);}
+
+/* Data source note */
+.data-src-note{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--border);margin-top:10px;letter-spacing:1px;}
+
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+@media(max-width:640px){
+  .analysis-grid{grid-template-columns:1fr;}
+  .fv-methods-grid{grid-template-columns:1fr;}
+  .verdict-top{flex-direction:column;}
+  .verdict-badge{align-items:flex-start;}
+  .wyckoff-bar{display:none;}
+  .broker-grid{grid-template-columns:1fr!important;}
+}
+.analysis-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.card-title{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--border);}
+.card-title.gold{color:var(--gold);}
+.ind-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(26,48,69,.5);}
+.ind-row:last-child{border-bottom:none;}
+.ind-n{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap;margin-right:8px;padding-top:1px;}
+.ind-v{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;text-align:right;color:var(--text);}
+
+.risk-section{display:flex;align-items:center;gap:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:18px;flex-wrap:wrap;}
+.risk-label-wrap{flex:1;min-width:130px;}
+.risk-title{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:5px;}
+.risk-value{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.risk-bar-wrap{flex:3;min-width:180px;}
+.risk-bar-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#00e676,#ffb300,#ff4560);position:relative;}
+.risk-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:white;box-shadow:0 0 10px rgba(255,255,255,.5);transition:left 1.2s ease;}
+
+.ai-reasoning{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:18px;}
+.ai-reasoning-text{font-size:14px;line-height:1.85;color:#8ab8d4;}
+
+#history-section{margin-bottom:40px;}
+.history-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+.history-list{display:flex;flex-direction:column;gap:7px;}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .15s;}
+.history-item:hover{border-color:var(--accent);}
+.hist-ticker{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;width:68px;}
+.hist-signal{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;width:42px;}
+.hist-signal.buy{color:var(--buy);}.hist-signal.sell{color:var(--sell);}.hist-signal.hold{color:var(--hold);}
+.hist-info{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);flex:1;}
+.hist-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--border);}
+
+.disclaimer{background:rgba(255,179,0,.05);border:1px solid rgba(255,179,0,.2);border-radius:10px;padding:13px 16px;font-size:12px;color:rgba(255,179,0,.7);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:24px;}
+.error-card{background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.3);border-radius:12px;padding:22px;color:var(--sell);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-8">
-            <h1 class="text-2xl font-bold tracking-tight">IDX PRO <span class="text-blue-500 text-sm font-mono">v3.0.0</span></h1>
-            <div class="flex space-x-2">
-                <input id="tickerInput" type="text" placeholder="Contoh: BBCA" class="bg-slate-800 border border-slate-700 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
-                <button onclick="analyzeStock()" id="btnAction" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-bold transition-all">ANALYZE</button>
-            </div>
-        </div>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">SAHAM.AI<span>Harga Wajar · Bandarmologi · Teknikal · IDX</span></div>
+    <div class="live-badge"><div class="live-dot"></div>REAL-TIME · IDX DATA</div>
+  </header>
 
-        <!-- Main Dashboard -->
-        <div id="resultArea" class="hidden space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass p-6 rounded-2xl glow-blue">
-                    <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest">Market Price</p>
-                    <div class="text-3xl font-bold" id="uiPrice">Rp 0</div>
-                    <div class="text-sm font-semibold mt-1" id="uiChange">+0.00%</div>
-                </div>
-                <div class="glass p-6 rounded-2xl">
-                    <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest">AI Fair Value</p>
-                    <div class="text-3xl font-bold text-emerald-400" id="uiFairValue">Rp 0</div>
-                    <p class="text-xs text-slate-500 mt-1 uppercase" id="uiSignal">Signal: -</p>
-                </div>
-                <div class="glass p-6 rounded-2xl">
-                    <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest">Volume Ratio</p>
-                    <div class="text-3xl font-bold text-blue-400" id="uiVolRatio">0.0x</div>
-                    <p class="text-xs text-slate-500 mt-1 uppercase" id="uiPhase">Phase: -</p>
-                </div>
-            </div>
+  <div class="search-section">
+    <div class="search-label">// Masukkan kode saham IDX</div>
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <span class="ticker-prefix">$</span>
+        <input class="search-input" id="tickerInput" type="text" placeholder="BBCA, TLKM, ANTM..." maxlength="6" autocomplete="off" spellcheck="false"/>
+      </div>
+      <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">🔍 Analisa</button>
+    </div>
+    <div class="quick-picks">
+      <span class="qp-label">Quick:</span>
+      <span class="quick-tag" onclick="quickPick('BBCA')">BBCA</span>
+      <span class="quick-tag" onclick="quickPick('TLKM')">TLKM</span>
+      <span class="quick-tag" onclick="quickPick('BBRI')">BBRI</span>
+      <span class="quick-tag" onclick="quickPick('BMRI')">BMRI</span>
+      <span class="quick-tag" onclick="quickPick('GOTO')">GOTO</span>
+      <span class="quick-tag" onclick="quickPick('ASII')">ASII</span>
+      <span class="quick-tag" onclick="quickPick('ANTM')">ANTM</span>
+      <span class="quick-tag" onclick="quickPick('INDF')">INDF</span>
+      <span class="quick-tag" onclick="quickPick('UNVR')">UNVR</span>
+      <span class="quick-tag" onclick="quickPick('BRIS')">BRIS</span>
+    </div>
+  </div>
 
-            <div class="glass p-8 rounded-2xl">
-                <h3 class="text-blue-400 font-mono mb-4 flex items-center">
-                    <span class="mr-2">●</span> AI STRATEGY REPORT
-                </h3>
-                <div id="uiSummary" class="text-slate-300 leading-relaxed text-lg"></div>
-                <div class="grid grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-700">
-                    <div>
-                        <p class="text-slate-500 text-xs uppercase">Immediate Support</p>
-                        <p class="font-bold text-xl" id="uiSupport">Rp 0</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-xs uppercase">Target Resistance</p>
-                        <p class="font-bold text-xl" id="uiResistance">Rp 0</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div id="loading">
+    <div class="loader-ring"></div>
+    <div class="loading-text" id="loadingText">Memulai analisa...</div>
+    <div class="loading-sub" id="loadingSub">Mengambil data dari internet</div>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1">▸ [1/5] Harga real-time — Yahoo Finance</div>
+      <div class="loading-step" id="step2">▸ [2/5] Data fundamental — EPS, BV, ROE, Dividen</div>
+      <div class="loading-step" id="step3">▸ [3/5] Harga wajar — DDM, Graham, PER, PBV</div>
+      <div class="loading-step" id="step4">▸ [4/5] Bandarmologi — OBV · Foreign Flow · Broker Summary · Wyckoff</div>
+      <div class="loading-step" id="step5">▸ [5/5] AI analisa akhir — Teknikal + Fundamental + Bandar</div>
+    </div>
+  </div>
 
-        <!-- Loading State -->
-        <div id="loading" class="hidden text-center py-20">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 mx-auto mb-4"></div>
-            <p class="text-slate-400 animate-pulse">Scanning IDX Database & Institutional Orderflows...</p>
+  <div id="result"></div>
+
+  <div id="history-section" style="display:none;">
+    <div class="history-title">// Riwayat Analisa Sesi Ini</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠ DISCLAIMER: Data harga dari Yahoo Finance (±15 mnt delay). Bandarmologi berbasis data volume publik — bukan akses data broker langsung.
+    Analisa ini bersifat edukatif, bukan saran investasi resmi. Investasi saham mengandung risiko kerugian.
+  </div>
+</div>
+
+<script>
+// API request dikirim ke serverless proxy Vercel — API key tersembunyi di server
+const API = "/api/claude";
+let analysisHistory = [];
+
+function quickPick(t){document.getElementById('tickerInput').value=t;runAnalysis();}
+document.getElementById('tickerInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAnalysis();});
+
+function setStep(n){
+  ['step1','step2','step3','step4','step5'].forEach((s,i)=>{
+    const el=document.getElementById(s);
+    if(!el)return;
+    el.className='loading-step'+(i<n?' done':i===n?' active':'');
+  });
+}
+function setTxt(t,s=''){
+  document.getElementById('loadingText').textContent=t;
+  document.getElementById('loadingSub').textContent=s;
+}
+
+async function callClaude(messages, useSearch=false, maxTok=1400){
+  const body={model:'claude-sonnet-4-20250514',max_tokens:maxTok,messages};
+  if(useSearch) body.tools=[{type:'web_search_20250305',name:'web_search'}];
+  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${r.status}`);}
+  const d=await r.json();
+  return d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+}
+
+function parseJSON(text){
+  const m=text.match(/\{[\s\S]*\}/);
+  if(!m)throw new Error('Format respons tidak valid');
+  try{return JSON.parse(m[0]);}
+  catch(e){throw new Error('Parse gagal: '+e.message);}
+}
+
+// ══════════════════════════════════════
+// 1. HARGA REAL-TIME — Yahoo Finance
+// ══════════════════════════════════════
+async function fetchPrice(ticker){
+  const txt=await callClaude([{role:'user',content:
+`Search Yahoo Finance for CURRENT real-time data of ${ticker}.JK (IDX stock).
+Query: "${ticker}.JK stock price Yahoo Finance"
+
+Return ONLY valid JSON (no markdown):
+{"found":true,"ticker":"${ticker}","price":<int>,"change":<int>,"change_pct":<float>,"open":<int>,"high":<int>,"low":<int>,"volume":<int>,"avg_volume":<int or null>,"prev_close":<int>,"week52_high":<int>,"week52_low":<int>,"market_cap_str":<str or null>,"shares_outstanding":<int or null>,"company_name":"<str>","sector":"<str>","industry":"<str>"}
+If not found: {"found":false,"ticker":"${ticker}","reason":"<why>"}`
+  }],true,900);
+  const d=parseJSON(txt);
+  if(!d.found)throw new Error(`${ticker} tidak ditemukan. ${d.reason||''}`);
+  return d;
+}
+
+// ══════════════════════════════════════
+// 2. FUNDAMENTAL LENGKAP
+// ══════════════════════════════════════
+async function fetchFundamental(ticker){
+  const txt=await callClaude([{role:'user',content:
+`Search for detailed fundamental data of ${ticker}.JK Indonesian stock.
+Search: "${ticker}.JK financials EPS book value ROE dividend"
+
+Return ONLY valid JSON (null if unavailable):
+{"eps_ttm":<float|null>,"eps_growth_rate":<float|null>,"book_value_per_share":<float|null>,"dps":<float|null>,"dividend_growth_rate":<float|null>,"roe":<float|null>,"roa":<float|null>,"net_margin":<float|null>,"revenue_growth":<float|null>,"debt_to_equity":<float|null>,"current_ratio":<float|null>,"pe_ratio":<float|null>,"pb_ratio":<float|null>,"beta":<float|null>,"cost_of_equity":<float|null>,"data_quality":"high"|"medium"|"low"}`
+  }],true,1000);
+  return parseJSON(txt);
+}
+
+// ══════════════════════════════════════
+// 3. HARGA WAJAR — 4 Metode
+// ══════════════════════════════════════
+function calcFairValue(p,f){
+  const res={};
+  if(f.eps_ttm>0&&f.book_value_per_share>0){
+    const g=Math.sqrt(22.5*f.eps_ttm*f.book_value_per_share);
+    res.graham={price:Math.round(g),method:'Graham Number',abbr:'GRAHAM',weight:.25,formula:`√(22.5 × EPS ${fmt(f.eps_ttm)} × BV ${fmt(f.book_value_per_share)})`};
+  }
+  if(f.dps>0&&f.cost_of_equity){
+    const ke=(f.cost_of_equity||11)/100,gr=Math.min((f.dividend_growth_rate||5)/100,ke-.02);
+    if(ke>gr){const d1=f.dps*(1+gr),ddm=d1/(ke-gr);res.ddm={price:Math.round(ddm),method:'Dividend Discount Model',abbr:'DDM',weight:.20,formula:`D₁=${f.dps.toFixed(0)}×(1+${(gr*100).toFixed(1)}%)/(Ke ${(ke*100).toFixed(1)}%−g ${(gr*100).toFixed(1)}%)`};}
+  }
+  if(f.eps_ttm>0){
+    const gr2=f.eps_growth_rate||10,fp=Math.max(8,Math.min(gr2,30));
+    res.per={price:Math.round(f.eps_ttm*fp),method:'PER Berbasis Pertumbuhan',abbr:'PER',weight:.30,formula:`EPS ${fmt(f.eps_ttm)} × PER Wajar ${fp.toFixed(1)}x (growth ${gr2.toFixed(1)}%)`};
+  }
+  if(f.book_value_per_share>0&&f.roe){
+    const ke2=(f.cost_of_equity||11)/100,fp2=Math.max(.5,f.roe/100/ke2);
+    res.pbv={price:Math.round(f.book_value_per_share*fp2),method:'PBV Berbasis ROE',abbr:'PBV',weight:.25,formula:`BV ${fmt(f.book_value_per_share)} × PBV Wajar ${fp2.toFixed(2)}x (ROE ${f.roe.toFixed(1)}%÷Ke ${(ke2*100).toFixed(1)}%)`};
+  }
+  const methods=Object.values(res);
+  if(!methods.length)return null;
+  const tw=methods.reduce((s,m)=>s+m.weight,0);
+  const cons=methods.reduce((s,m)=>s+m.price*m.weight,0)/tw;
+  const up=((cons-p.price)/p.price*100);
+  const mos=((cons-p.price)/cons*100);
+  return{methods:res,consensus:Math.round(cons),upside:up.toFixed(1),status:up>15?'undervalue':up<-15?'overvalue':'fair',mos:mos.toFixed(1),count:methods.length};
+}
+
+// ══════════════════════════════════════
+// 4. BANDARMOLOGI — Multi-Source Real Data
+// ══════════════════════════════════════
+async function fetchBandarmology(ticker, p){
+  // PASS 1: Fetch foreign flow & broker data dari sumber IDX spesifik
+  const txt1 = await callClaude([{role:'user', content:
+`Search for REAL and CURRENT bandarmology data for ${ticker} stock on the Indonesian Stock Exchange (IDX/BEI).
+
+Execute these searches NOW to find actual data:
+1. Search: "${ticker} foreign net buy sell hari ini IDX BEI asing 2025"
+2. Search: "${ticker} broker summary net buy sell IDX terbaru"
+3. Search: "stockbit ${ticker} bandarmologi volume asing"
+4. Search: "${ticker} IDX investor asing kepemilikan saham"
+5. Search: "${ticker}.JK volume history chart"
+
+Context:
+- Ticker: ${ticker}.JK on IDX
+- Today's price: Rp ${p.price.toLocaleString('id')} (${p.change_pct >= 0 ? '+' : ''}${p.change_pct}%)
+- Today's volume from Yahoo Finance: ${p.volume ? (p.volume/1e6).toFixed(2)+'M lot' : 'N/A'}
+- 30D avg volume from Yahoo Finance: ${p.avg_volume ? (p.avg_volume/1e6).toFixed(2)+'M lot' : 'N/A'}
+
+Based on ALL search results found, extract the most accurate data available and return ONLY valid JSON:
+{
+  "avg_vol_10d": <integer: 10-day avg volume in shares>,
+  "avg_vol_30d": <integer: use ${p.avg_volume||'null'} from Yahoo if no better source>,
+  "vol_sessions": [
+    {"session":"T","date":"today","vol":${p.volume||0},"price":${p.price},"change_pct":${p.change_pct},"is_estimated":false},
+    {"session":"T-1","date":"<date DD/MM>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-2","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-3","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-4","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-5","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-6","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-7","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-8","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>},
+    {"session":"T-9","date":"<date>","vol":<int>,"price":<int>,"change_pct":<float>,"is_estimated":<bool>}
+  ],
+  "foreign_net_buy_today": <IDR billions float, positive=buy, negative=sell, null if truly unknown>,
+  "foreign_net_buy_5d": <5-day cumulative IDR billions float or null>,
+  "foreign_net_buy_30d": <30-day cumulative IDR billions float or null>,
+  "foreign_flow_trend": "net_buy"|"net_sell"|"neutral"|"unknown",
+  "foreign_ownership_pct": <% float or null>,
+  "top_broker_buy": [
+    {"broker":"<kode broker>","name":"<nama broker>","net_buy_lot":<int>,"value_bn":<IDR billion float>},
+    {"broker":"<kode>","name":"<nama>","net_buy_lot":<int>,"value_bn":<float>},
+    {"broker":"<kode>","name":"<nama>","net_buy_lot":<int>,"value_bn":<float>}
+  ],
+  "top_broker_sell": [
+    {"broker":"<kode broker>","name":"<nama broker>","net_sell_lot":<int>,"value_bn":<float>},
+    {"broker":"<kode>","name":"<nama>","net_sell_lot":<int>,"value_bn":<float>},
+    {"broker":"<kode>","name":"<nama>","net_sell_lot":<int>,"value_bn":<float>}
+  ],
+  "broker_data_available": <boolean: true if real broker data found, false if estimated>,
+  "dominant_buyer_type": "asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown",
+  "dominant_seller_type": "asing"|"lokal_institusi"|"ritel"|"campuran"|"unknown",
+  "big_block_trades_today": <integer or null>,
+  "unusual_vol_detected": <boolean>,
+  "unusual_vol_desc": "<string or null>",
+  "vol_trend_10d": "increasing"|"decreasing"|"stable",
+  "price_vol_divergence": <boolean>,
+  "divergence_type": "bullish_divergence"|"bearish_divergence"|"none",
+  "vwap_relation": "above_vwap"|"below_vwap"|"at_vwap",
+  "accumulation_distribution_line": "positive"|"negative"|"neutral",
+  "bandar_score": <integer 0-100: 0=kuat distribusi, 100=kuat akumulasi>,
+  "bandar_phase": "accumulation_phase_1"|"accumulation_phase_2"|"markup"|"distribution"|"markdown"|"neutral",
+  "wyckoff_event": "<PS|SC|AR|ST|SOS|LPS|UTAD|LPSY|SOW atau null>",
+  "wyckoff_desc": "<deskripsi wyckoff event dalam bahasa Indonesia atau null>",
+  "institutional_signal": "accumulation"|"distribution"|"neutral",
+  "candle_volume_pattern": "<deskripsi pola candle+volume terkini: misal 'Bullish engulfing dengan volume tinggi' atau null>",
+  "data_sources_used": ["<source1>","<source2>"],
+  "data_confidence": "high"|"medium"|"low",
+  "bandar_summary": "<4-5 kalimat interpretasi profesional bandarmologi dalam bahasa Indonesia: sebut broker dominan, arah foreign flow, sinyal OBV, fase Wyckoff, dan saran konkret untuk trader ritel>"
+}`
+  }], true, 2000);
+
+  const raw = parseJSON(txt1);
+
+  // PASS 2: If broker data not found, do a focused broker search
+  if(!raw.broker_data_available || !raw.top_broker_buy?.length){
+    try{
+      const txt2 = await callClaude([{role:'user', content:
+`Search specifically for broker transaction summary (ringkasan broker) for ${ticker} stock on IDX Indonesia.
+
+Search: "${ticker} broker buy sell summary IDX stockbit RTI"
+Search: "broker summary ${ticker} saham indonesia terbesar"
+
+Indonesian stock brokers commonly active: BRI (BBRI group), Mandiri Sekuritas (CC), BCA Sekuritas (KZ), Indo Premier (PD), Mirae (YP), CGS-CIMB (YU), Macquarie (RX), Morgan Stanley (MS), Deutsche (DB), UBS (UB), Credit Suisse (CS), Goldman (GS), JP Morgan (BK), Citigroup (CT).
+
+For ${ticker} specifically, which brokers are currently the biggest NET BUYERS and NET SELLERS?
+
+Return ONLY valid JSON:
+{
+  "top_broker_buy": [
+    {"broker":"<2-3 char code>","name":"<full name>","net_buy_lot":<int>,"value_bn":<float bn IDR>},
+    {"broker":"<code>","name":"<name>","net_buy_lot":<int>,"value_bn":<float>},
+    {"broker":"<code>","name":"<name>","net_buy_lot":<int>,"value_bn":<float>}
+  ],
+  "top_broker_sell": [
+    {"broker":"<code>","name":"<name>","net_sell_lot":<int>,"value_bn":<float>},
+    {"broker":"<code>","name":"<name>","net_sell_lot":<int>,"value_bn":<float>},
+    {"broker":"<code>","name":"<name>","net_sell_lot":<int>,"value_bn":<float>}
+  ],
+  "broker_data_available": <boolean>,
+  "dominant_buyer_type": "asing"|"lokal_institusi"|"ritel"|"campuran",
+  "dominant_seller_type": "asing"|"lokal_institusi"|"ritel"|"campuran"
+}`
+      }], true, 900);
+      const bdata = parseJSON(txt2);
+      if(bdata.top_broker_buy?.length) raw.top_broker_buy = bdata.top_broker_buy;
+      if(bdata.top_broker_sell?.length) raw.top_broker_sell = bdata.top_broker_sell;
+      if(bdata.broker_data_available) raw.broker_data_available = true;
+      if(bdata.dominant_buyer_type) raw.dominant_buyer_type = bdata.dominant_buyer_type;
+      if(bdata.dominant_seller_type) raw.dominant_seller_type = bdata.dominant_seller_type;
+    }catch(e){ /* broker pass 2 optional */ }
+  }
+
+  return raw;
+}
+
+// Calculate derived bandar signals + OBV from session data
+function calcBandarSignals(p, bm){
+  const sessions = bm.vol_sessions || [];
+
+  // OBV from 10 sessions
+  let obv = 0;
+  const obvHistory = [];
+  sessions.slice().reverse().forEach(s => {
+    if((s.change_pct||0) > 0.2) obv += (s.vol||0);
+    else if((s.change_pct||0) < -0.2) obv -= (s.vol||0);
+    obvHistory.push(obv);
+  });
+  // OBV trend: compare last 3 vs first 3
+  let obvTrend = 'sideways';
+  if(obvHistory.length >= 6){
+    const early = obvHistory.slice(0,3).reduce((a,b)=>a+b,0)/3;
+    const late = obvHistory.slice(-3).reduce((a,b)=>a+b,0)/3;
+    obvTrend = late > early*1.05 ? 'rising' : late < early*0.95 ? 'falling' : 'sideways';
+  } else {
+    obvTrend = obv > 0 ? 'rising' : obv < 0 ? 'falling' : 'sideways';
+  }
+
+  // Volume ratio vs 30D avg
+  const avgVol = bm.avg_vol_30d || p.avg_volume || 1;
+  const curVol = (sessions[0]?.vol) || p.volume || 0;
+  const volRatio = avgVol > 0 ? curVol / avgVol : 1;
+
+  // Avg volume last 5 sessions vs prev 5 (trend)
+  const vol5Recent = sessions.slice(0,5).reduce((s,x)=>s+(x.vol||0),0)/5;
+  const vol5Prev   = sessions.slice(5,10).reduce((s,x)=>s+(x.vol||0),0)/5;
+  const volTrend5d = vol5Prev > 0 ? ((vol5Recent-vol5Prev)/vol5Prev*100).toFixed(1) : null;
+
+  // Price-Volume signal
+  const priceUp = p.change_pct > 0;
+  const volHigh  = volRatio > 1.25;
+  const pvSignal = priceUp && volHigh ? 'bullish_confirmation'
+    : !priceUp && volHigh            ? 'bearish_confirmation'
+    : priceUp && !volHigh            ? 'weak_rally'
+    :                                  'weak_decline';
+
+  // Accumulation score from sessions: count sessions where price up with high vol vs price down with high vol
+  let accumCount = 0, distribCount = 0;
+  sessions.forEach(s => {
+    const vr = avgVol > 0 ? (s.vol||0)/avgVol : 1;
+    if((s.change_pct||0) > 0.3 && vr > 1.1) accumCount++;
+    else if((s.change_pct||0) < -0.3 && vr > 1.1) distribCount++;
+  });
+  // Blend AI score with calculated score
+  const calcScore = sessions.length > 0
+    ? Math.round(50 + (accumCount - distribCount) / sessions.length * 50)
+    : 50;
+  const aiScore = bm.bandar_score || 50;
+  const score = Math.min(100, Math.max(0, Math.round((calcScore + aiScore) / 2)));
+  const verdict = score >= 65 ? 'akumulasi' : score <= 35 ? 'distribusi' : 'netral';
+
+  // Foreign flow strength label
+  const ff30 = bm.foreign_net_buy_30d;
+  let foreignStrength = 'netral';
+  if(ff30 != null){
+    foreignStrength = ff30 > 100 ? 'kuat beli' : ff30 > 0 ? 'ringan beli' : ff30 < -100 ? 'kuat jual' : 'ringan jual';
+  }
+
+  return {...bm, obvTrend, obvHistory, volRatio, volTrend5d, pvSignal, score, verdict, foreignStrength, accumCount, distribCount};
+}
+
+// ══════════════════════════════════════
+// 5. AI FINAL ANALYSIS
+// ══════════════════════════════════════
+async function aiAnalysis(ticker,p,f,fv,bm){
+  const pos52=(p.week52_high&&p.week52_low)?(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*100).toFixed(0)+'%':'N/A';
+  const rsiEst=(p.week52_high&&p.week52_low)?Math.round(30+(((p.price-p.week52_low)/(p.week52_high-p.week52_low))*50)):50;
+
+  const txt=await callClaude([{role:'user',content:
+`Analis saham Indonesia senior. Analisa komprehensif ${ticker}.JK.
+
+DATA REAL:
+- Harga: Rp ${p.price.toLocaleString('id')} | Perubahan: ${p.change_pct}%
+- Range hari: Rp ${fmt(p.low)}–${fmt(p.high)} | Volume: ${p.volume?(p.volume/1e6).toFixed(1)+'M':'N/A'}
+- 52W: Rp ${fmt(p.week52_low)}–${fmt(p.week52_high)} | Posisi: ${pos52} | RSI est: ~${rsiEst}
+
+FUNDAMENTAL: EPS=${f.eps_ttm||'N/A'} | ROE=${f.roe||'N/A'}% | PER=${f.pe_ratio||'N/A'}x | PBV=${f.pb_ratio||'N/A'}x
+
+HARGA WAJAR: ${fv?`Konsensus Rp ${fmt(fv.consensus)} (${fv.upside>0?'+':''}${fv.upside}%, ${fv.status})`:'N/A'}
+
+BANDARMOLOGI:
+- Bandar Score: ${bm?.score||50}/100 (${bm?.verdict})
+- Fase: ${bm?.bandar_phase} | OBV: ${bm?.obvTrend}
+- Foreign Flow: ${bm?.foreign_flow_trend} | 30D: ${bm?.foreign_net_buy_30d!=null?'Rp '+bm.foreign_net_buy_30d+'M':'N/A'}
+- Vol Ratio: ${bm?.volRatio?.toFixed(2)||'N/A'}x | Anomali: ${bm?.unusual_vol_detected?'YA':'TIDAK'}
+- P-V Signal: ${bm?.pvSignal} | Divergensi: ${bm?.divergence_type||'none'}
+
+Target & stop loss dari harga NYATA Rp ${p.price.toLocaleString('id')}.
+
+Balas HANYA JSON valid:
+{"keputusan":"BUY"|"SELL"|"HOLD","confidence":<60-95>,"target_harga":"Rp X.XXX","stop_loss":"Rp X.XXX","potensi_gain":"+X.X%","risk_level":<1-10>,"teknikal":{"RSI ~${rsiEst}":"<interp>","Posisi 52W ${pos52}":"<interp>","Momentum":"<interp>","Volume":"<vs avg>","Support":"Rp <n>","Resistance":"Rp <n>","Tren":"<short>"},"sentimen":"Bullish"|"Bearish"|"Netral","katalis":["<3 katalis>"],"risiko":["<2 risiko>"],"analisa":"<3-4 kalimat. WAJIB sebut harga Rp ${p.price.toLocaleString('id')}, harga wajar, sinyal bandar, target & stop loss>"}`
+  }],false,1400);
+  return parseJSON(txt);
+}
+
+// ══════════════════════════════════════
+// MAIN
+// ══════════════════════════════════════
+async function runAnalysis(){
+  const ticker=document.getElementById('tickerInput').value.trim().toUpperCase();
+  if(!ticker||ticker.length<2){alert('Masukkan kode saham valid');return;}
+  const btn=document.getElementById('analyzeBtn');
+  btn.disabled=true;
+  document.getElementById('loading').style.display='block';
+  document.getElementById('result').style.display='none';
+  setStep(0);
+  try{
+    setTxt('Mengambil harga real-time...','Yahoo Finance · '+ticker+'.JK');
+    setStep(0);
+    const P=await fetchPrice(ticker);
+
+    setTxt('Mengambil data fundamental...','EPS · ROE · Book Value · Dividen');
+    setStep(1);
+    const F=await fetchFundamental(ticker);
+
+    setTxt('Menghitung harga wajar...','DDM · Graham · PER · PBV');
+    setStep(2);
+    const FV=calcFairValue(P,F);
+
+    setTxt('Analisa volume bandarmologi...','OBV · Foreign Flow · Akumulasi/Distribusi · Wyckoff');
+    setStep(3);
+    const bmRaw=await fetchBandarmology(ticker,P);
+    const BM=calcBandarSignals(P,bmRaw);
+
+    setTxt('AI menyimpulkan analisa akhir...','Teknikal + Fundamental + Valuasi + Bandar');
+    setStep(4);
+    const A=await aiAnalysis(ticker,P,F,FV,BM);
+
+    renderResult(ticker,P,F,FV,BM,A);
+    addToHistory(ticker,P,A);
+  }catch(err){
+    renderError(err.message);
+  }finally{
+    btn.disabled=false;
+    document.getElementById('loading').style.display='none';
+  }
+}
+
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
+function fmt(n){
+  if(n==null||n===''||n===undefined)return '-';
+  const num=Number(n);
+  if(isNaN(num))return String(n);
+  return num.toLocaleString('id');
+}
+function fmtM(n){return n!=null?(n/1e6).toFixed(1)+'M':'-';}
+function upsideCol(n){return n>15?'var(--buy)':n<-15?'var(--sell)':'var(--hold)';}
+
+// ══════════════════════════════════════
+// RENDER BANDARMOLOGY
+// ══════════════════════════════════════
+function buildBandarHTML(p, bm){
+  if(!bm) return `<div class="bandar-section" style="opacity:.6;"><div class="bandar-title">◉ Bandarmologi — Data Tidak Tersedia</div></div>`;
+
+  const score   = bm.score || 50;
+  const verdict = bm.verdict || 'netral';
+  const vClass  = verdict==='akumulasi'?'b-akkum':verdict==='distribusi'?'b-distr':'b-netral';
+  const vLbl    = verdict==='akumulasi'?'⬆ AKUMULASI BANDAR':verdict==='distribusi'?'⬇ DISTRIBUSI BANDAR':'→ KONSOLIDASI';
+  const sCol    = score>=65?'var(--buy)':score<=35?'var(--sell)':'var(--hold)';
+  const sBorder = score>=65?'rgba(0,230,118,.5)':score<=35?'rgba(255,69,96,.5)':'rgba(255,179,0,.5)';
+
+  // Wyckoff phases
+  const phases       = ['accumulation_phase_1','accumulation_phase_2','markup','distribution','markdown','neutral'];
+  const phaseLabels  = ['AKUM.1','AKUM.2','MARKUP','DISTR.','MARKDN','NETRAL'];
+  const phaseClasses = ['wp-acc1','wp-acc2','wp-markup','wp-distr','wp-markdown','wp-neutral'];
+  const wyckoffBar   = phases.map((ph,i)=>`<div class="wyckoff-phase ${phaseClasses[i]}${bm.bandar_phase===ph?' active':''}">${phaseLabels[i]}</div>`).join('');
+
+  // OBV
+  const obvCol = bm.obvTrend==='rising'?'var(--buy)':bm.obvTrend==='falling'?'var(--sell)':'var(--hold)';
+  const obvLbl = bm.obvTrend==='rising'?'↑ NAIK — Akumulasi':bm.obvTrend==='falling'?'↓ TURUN — Distribusi':'→ SIDEWAYS';
+
+  // Foreign flow
+  const ffCol  = bm.foreign_flow_trend==='net_buy'?'var(--buy)':bm.foreign_flow_trend==='net_sell'?'var(--sell)':'var(--muted)';
+  const ffLbl  = bm.foreign_flow_trend==='net_buy'?'NET BUY ↑':bm.foreign_flow_trend==='net_sell'?'NET SELL ↓':'NETRAL';
+  const ff30   = bm.foreign_net_buy_30d;
+  const ffPct  = ff30!=null ? Math.min(100,Math.max(0,50+(ff30>0?Math.min(40,ff30/8):Math.max(-40,ff30/8)))) : 50;
+
+  // Volume bars (price-colored)
+  const sessions = bm.vol_sessions || [];
+  const maxV = sessions.length ? Math.max(...sessions.map(s=>s.vol||0), 1) : 1;
+  const avgVol = bm.avg_vol_30d || p.avg_volume || maxV;
+  const avgLineH = avgVol > 0 ? (avgVol/maxV*100) : 50;
+  const volBarsHTML = sessions.length ? `
+  <div class="vol-chart">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="vol-chart-title">Volume 10 Sesi ${sessions.some(s=>s.is_estimated)?'· ★ = estimasi':''}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">
+        ${bm.volTrend5d!=null?`Tren 5D: <span style="color:${parseFloat(bm.volTrend5d)>=0?'var(--buy)':'var(--sell)'}">
+        ${parseFloat(bm.volTrend5d)>=0?'↑':'↓'}${Math.abs(parseFloat(bm.volTrend5d))}%</span>`:''}</div>
+    </div>
+    <div class="vol-bars" id="volBarsContainer" style="position:relative;">
+      <div style="position:absolute;bottom:${Math.min(95,avgLineH)}%;left:0;right:0;border-top:1px dashed rgba(255,255,255,.2);pointer-events:none;z-index:1;">
+        <span style="position:absolute;right:0;top:-14px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.3);">AVG</span>
+      </div>
+      ${sessions.map((s,i)=>{
+        const hPct = Math.max(5,(s.vol/maxV)*100);
+        const isUp = (s.change_pct||0) >= 0;
+        const isHigh = (s.vol||0) > avgVol * 1.5;
+        const col = isHigh ? (isUp?'rgba(0,230,118,.9)':'rgba(255,69,96,.9)') : (isUp?'rgba(0,230,118,.5)':'rgba(255,69,96,.45)');
+        const est = s.is_estimated?' ★':'';
+        return `<div class="vb" style="height:4px;background:${col};" data-h="${hPct}">
+          <div class="vb-tip">${s.session}${est}<br>${s.date||''}<br>Vol: ${fmtM(s.vol)}${isHigh?' ⚡':''}<br>Rp ${fmt(s.price)} ${isUp?'▲':'▼'}${Math.abs(s.change_pct||0).toFixed(1)}%</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="vol-chart-labels">${sessions.map(s=>`<div class="vol-chart-label">${s.session}</div>`).join('')}</div>
+    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;flex-wrap:wrap;gap:6px;">
+      <span>Avg 30D: ${fmtM(bm.avg_vol_30d)} · Avg 10D: ${fmtM(bm.avg_vol_10d)}</span>
+      <span>Vol Hari Ini: <span style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--muted)'}">
+        ${bm.volRatio?.toFixed(2)||'-'}x rata-rata ${bm.volRatio>=2?'⚡ SANGAT TINGGI':bm.volRatio>=1.5?'TINGGI':bm.volRatio>=1.2?'Di atas avg':'Normal'}</span></span>
+    </div>
+    ${bm.candle_volume_pattern?`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--purple);margin-top:6px;padding:6px 10px;background:rgba(167,139,250,.07);border-radius:5px;border-left:2px solid var(--purple);">📊 ${bm.candle_volume_pattern}</div>`:''}
+  </div>` : '';
+
+  // Foreign flow bar
+  const ffBarHTML = `
+  <div class="ff-bar-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;">
+        Foreign Net Flow ${bm.foreign_ownership_pct!=null?'· Kepemilikan Asing: <span style="color:var(--accent)">'+bm.foreign_ownership_pct.toFixed(1)+'%</span>':''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${ffCol}">${ffLbl}</span>
+        ${bm.foreignStrength?`<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:${ffCol};opacity:.8;">(${bm.foreignStrength})</span>`:''}
+      </div>
+    </div>
+    <div class="ff-bar-track" style="position:relative;background:var(--surface2);">
+      <div class="ff-center"></div>
+      <div class="ff-bar-fill" id="ffBar" style="width:${Math.abs(ffPct-50)}%;background:${ffCol};${ff30!=null&&ff30<0?'margin-left:'+(ffPct)+'%;':'margin-left:50%;'}"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;margin-top:4px;flex-wrap:wrap;gap:4px;">
+      <span style="color:var(--sell);">◄ NET SELL</span>
+      <span style="color:var(--muted);">
+        ${bm.foreign_net_buy_today!=null?'Hari ini: <b style="color:'+ffCol+'">'+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+' M</b>':''}&nbsp;
+        ${bm.foreign_net_buy_5d!=null?' · 5D: <b style="color:'+ffCol+'">'+( bm.foreign_net_buy_5d>=0?'+':'')+fmt(bm.foreign_net_buy_5d)+' M</b>':''}
+        ${bm.foreign_net_buy_30d!=null?' · 30D: <b style="color:'+ffCol+'">'+( bm.foreign_net_buy_30d>=0?'+':'')+fmt(bm.foreign_net_buy_30d)+' M</b>':''}
+      </span>
+      <span style="color:var(--buy);">NET BUY ►</span>
+    </div>
+  </div>`;
+
+  // ── BROKER TABLE ──────────────────────────────
+  let brokerHTML = '';
+  const hasBroker = (bm.top_broker_buy?.length || bm.top_broker_sell?.length);
+  if(hasBroker){
+    const buyRows  = (bm.top_broker_buy||[]).slice(0,5).map(b=>`
+      <tr>
+        <td style="color:var(--buy);font-weight:700;">${b.broker||'-'}</td>
+        <td style="color:var(--text);">${b.name||'-'}</td>
+        <td style="color:var(--buy);text-align:right;">${b.net_buy_lot?fmt(b.net_buy_lot)+' lot':'-'}</td>
+        <td style="color:var(--buy);text-align:right;">${b.value_bn!=null?'Rp '+b.value_bn.toFixed(1)+' M':'-'}</td>
+      </tr>`).join('');
+    const sellRows = (bm.top_broker_sell||[]).slice(0,5).map(b=>`
+      <tr>
+        <td style="color:var(--sell);font-weight:700;">${b.broker||'-'}</td>
+        <td style="color:var(--text);">${b.name||'-'}</td>
+        <td style="color:var(--sell);text-align:right;">${b.net_sell_lot?fmt(b.net_sell_lot)+' lot':'-'}</td>
+        <td style="color:var(--sell);text-align:right;">${b.value_bn!=null?'Rp '+b.value_bn.toFixed(1)+' M':'-'}</td>
+      </tr>`).join('');
+    const tStyle = `width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;`;
+    const thStyle = `font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:5px 6px;border-bottom:1px solid var(--border);text-align:left;`;
+    const tdStyle = `padding:5px 6px;border-bottom:1px solid rgba(26,48,69,.4);`;
+    const dataNote = bm.broker_data_available
+      ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">
+          Pembeli dominan: <span style="color:var(--buy)">${bm.dominant_buyer_type||'N/A'}</span> &nbsp;·&nbsp;
+          Penjual dominan: <span style="color:var(--sell)">${bm.dominant_seller_type||'N/A'}</span>
+         </div>`
+      : `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--border);margin-top:5px;">★ Data broker adalah estimasi — untuk data real gunakan RTI Business / Stockbit Pro</div>`;
+    brokerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">
+        Ringkasan Broker ${bm.broker_data_available?'':'(Estimasi)'}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--buy);letter-spacing:1px;margin-bottom:6px;">▲ TOP NET BUYER</div>
+          <table style="${tStyle}">
+            <thead><tr>
+              <th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th>
+              <th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th>
+            </tr></thead>
+            <tbody style="color:var(--text);">${buyRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody>
+          </table>
         </div>
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sell);letter-spacing:1px;margin-bottom:6px;">▼ TOP NET SELLER</div>
+          <table style="${tStyle}">
+            <thead><tr>
+              <th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th>
+              <th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th>
+            </tr></thead>
+            <tbody style="color:var(--text);">${sellRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+      ${dataNote}
+    </div>`;
+  }
+
+  // Alert boxes
+  const alerts = [];
+  if(bm.unusual_vol_detected) alerts.push(`<div class="alert-box alert-anomaly">🔔 VOLUME ANOMALI: ${bm.unusual_vol_desc||'Volume tidak biasa terdeteksi'}</div>`);
+  if(bm.price_vol_divergence && bm.divergence_type && bm.divergence_type!=='none') alerts.push(`<div class="alert-box alert-divergence">⚡ DIVERGENSI ${bm.divergence_type==='bullish_divergence'?'BULLISH — Harga turun tapi OBV naik (potensi reversal naik)':'BEARISH — Harga naik tapi OBV turun (potensi reversal turun)'}</div>`);
+  if(bm.wyckoff_event && bm.wyckoff_desc) alerts.push(`<div class="alert-box" style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);color:var(--purple);">◈ WYCKOFF EVENT: <b>${bm.wyckoff_event}</b> — ${bm.wyckoff_desc}</div>`);
+  if(bm.foreign_flow_trend==='net_buy' && (ff30||0)>50) alerts.push(`<div class="alert-box alert-foreign">🌐 FOREIGN BUYING: Asing akumulasi kuat — Net buy Rp ${fmt(ff30)}M (30D)${bm.foreign_ownership_pct?' · Kepemilikan: '+bm.foreign_ownership_pct.toFixed(1)+'%':''}</div>`);
+  if(bm.foreign_flow_trend==='net_sell' && (ff30||0)<-50) alerts.push(`<div class="alert-box" style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.3);color:var(--sell);">⚠ FOREIGN SELLING: Asing distribusi kuat — Net sell Rp ${fmt(Math.abs(ff30))}M (30D)</div>`);
+
+  // PV Signal labels
+  const pvLabels = {
+    'bullish_confirmation':'✓ Volume Konfirmasi Bullish',
+    'bearish_confirmation':'✗ Volume Konfirmasi Bearish',
+    'weak_rally':'↑ Rally Tanpa Volume (Lemah)',
+    'weak_decline':'↓ Koreksi Tanpa Volume (Normal)'
+  };
+
+  // A/D count bar
+  const totalSig = bm.accumCount + bm.distribCount;
+  const accumPct = totalSig > 0 ? (bm.accumCount/totalSig*100).toFixed(0) : 50;
+  const adBar = totalSig > 0 ? `
+  <div style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;">
+      <span>Session Distribusi (${bm.distribCount})</span>
+      <span style="color:var(--accent);">Akumulasi vs Distribusi (10 sesi)</span>
+      <span>Session Akumulasi (${bm.accumCount})</span>
+    </div>
+    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+      <div style="height:100%;background:linear-gradient(90deg,var(--sell) 0%,var(--sell) ${100-accumPct}%,var(--buy) ${100-accumPct}%,var(--buy) 100%);border-radius:3px;"></div>
+    </div>
+  </div>` : '';
+
+  const srcNote = bm.data_sources_used?.length
+    ? `<div class="data-src-note">Sumber data: ${bm.data_sources_used.join(' · ')} · Kepercayaan data: <span style="color:${bm.data_confidence==='high'?'var(--buy)':bm.data_confidence==='medium'?'var(--hold)':'var(--sell)'}"> ${(bm.data_confidence||'low').toUpperCase()}</span></div>` : '';
+
+  return `
+  <div class="bandar-section">
+    <div class="bandar-title-row">
+      <div>
+        <div class="bandar-title">◉ Bandarmologi — Analisa Volume &amp; Aktivitas Institusional</div>
+        <div class="bandar-subtitle">OBV · Akumulasi/Distribusi · Foreign Flow · Broker Summary · Wyckoff Cycle</div>
+      </div>
+      <div class="bandar-verdict-pill ${vClass}">${vLbl}</div>
     </div>
 
-    <script>
-        const formatIDR = (n) => (n || 0).toLocaleString('id-ID');
+    <div class="bandar-score-wrap">
+      <div class="bandar-score-circle" style="border-color:${sBorder};">
+        <div class="bandar-score-num" style="color:${sCol}">${score}</div>
+        <div class="bandar-score-lbl">/100</div>
+      </div>
+      <div class="bandar-score-desc">
+        <div class="bandar-score-title" style="color:${sCol}">${vLbl}</div>
+        <div class="bandar-score-sub">
+          OBV: <span style="color:${obvCol}">${obvLbl}</span><br>
+          A/D Line: <span style="color:${bm.accumulation_distribution_line==='positive'?'var(--buy)':bm.accumulation_distribution_line==='negative'?'var(--sell)':'var(--muted)'}">
+            ${bm.accumulation_distribution_line==='positive'?'↑ Akumulasi':bm.accumulation_distribution_line==='negative'?'↓ Distribusi':'→ Netral'}</span><br>
+          ${score>=65?'Big player sedang akumulasi posisi. Pantau untuk entry.':score<=35?'Big player melepas posisi. Waspadai tekanan jual.':'Belum ada sinyal jelas. Monitor terus.'}
+        </div>
+      </div>
+    </div>
 
-        async function analyzeStock() {
-            const ticker = document.getElementById('tickerInput').value.toUpperCase();
-            if (!ticker) return alert('Masukkan Ticker!');
+    <div style="margin-bottom:12px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;">
+        Fase Wyckoff${bm.wyckoff_event?' · Event terdeteksi: <span style="color:var(--purple)">'+bm.wyckoff_event+'</span>':''}
+      </div>
+      <div class="wyckoff-bar">${wyckoffBar}</div>
+    </div>
 
-            const btn = document.getElementById('btnAction');
-            const resultArea = document.getElementById('resultArea');
-            const loading = document.getElementById('loading');
+    ${alerts.join('')}
 
-            btn.disabled = true;
-            resultArea.classList.add('hidden');
-            loading.classList.remove('hidden');
+    <div class="bandar-signals-grid">
+      <div class="bsc">
+        <div class="bsc-label">Vol Ratio Hari Ini</div>
+        <div class="bsc-value" style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--text)'}">${bm.volRatio?.toFixed(2)||'-'}x</div>
+        <div class="bsc-interp">${bm.volRatio>=2?'⚡ Sangat tinggi':bm.volRatio>=1.5?'Tinggi sekali':bm.volRatio>=1.2?'Diatas rata-rata':bm.volRatio<0.6?'Sangat sepi':'Normal'}</div>
+      </div>
+      <div class="bsc">
+        <div class="bsc-label">OBV Trend</div>
+        <div class="bsc-value" style="color:${obvCol};font-size:12px;">${(bm.obvTrend||'N/A').toUpperCase()}</div>
+        <div class="bsc-interp" style="color:${obvCol}">${obvLbl}</div>
+      </div>
+      <div class="bsc">
+        <div class="bsc-label">Price-Volume Signal</div>
+        <div class="bsc-value" style="font-size:11px;color:var(--text)">${pvLabels[bm.pvSignal]||bm.pvSignal||'-'}</div>
+        <div class="bsc-interp">Konfirmasi tren & kekuatan</div>
+      </div>
+      <div class="bsc">
+        <div class="bsc-label">Foreign Flow</div>
+        <div class="bsc-value" style="color:${ffCol};font-size:13px;">${ffLbl}</div>
+        <div class="bsc-interp" style="color:${ffCol}">${bm.foreignStrength||''} · ${bm.foreign_net_buy_today!=null?'Hari ini: '+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+'M':'Kepemilikan: '+(bm.foreign_ownership_pct?.toFixed(1)||'?')+'%'}</div>
+      </div>
+      <div class="bsc">
+        <div class="bsc-label">VWAP</div>
+        <div class="bsc-value" style="color:${bm.vwap_relation==='above_vwap'?'var(--buy)':bm.vwap_relation==='below_vwap'?'var(--sell)':'var(--muted)'};font-size:11px;">${(bm.vwap_relation||'N/A').replace(/_/g,' ').toUpperCase()}</div>
+        <div class="bsc-interp">${bm.vwap_relation==='above_vwap'?'Bullish intraday':bm.vwap_relation==='below_vwap'?'Bearish intraday':'Dekat VWAP'}</div>
+      </div>
+      <div class="bsc">
+        <div class="bsc-label">Institutional Signal</div>
+        <div class="bsc-value" style="color:${bm.institutional_signal==='accumulation'?'var(--buy)':bm.institutional_signal==='distribution'?'var(--sell)':'var(--muted)'};font-size:12px;">${(bm.institutional_signal||'neutral').toUpperCase()}</div>
+        <div class="bsc-interp">${bm.big_block_trades_today!=null?bm.big_block_trades_today+' block trade hari ini':'Vol 10D: '+(bm.vol_trend_10d||'N/A')}</div>
+      </div>
+    </div>
 
-            try {
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ticker })
-                });
+    ${adBar}
+    ${ffBarHTML}
+    ${brokerHTML}
+    ${volBarsHTML}
 
-                const data = await response.json();
+    <div class="bandar-text">${bm.bandar_summary||'Interpretasi bandarmologi tidak tersedia.'}</div>
+    ${srcNote}
+  </div>`;
+}
 
-                // Update UI
-                document.getElementById('uiPrice').innerText = `Rp ${formatIDR(data.price)}`;
-                const change = data.change || 0;
-                const changeEl = document.getElementById('uiChange');
-                changeEl.innerText = `${change > 0 ? '▲' : '▼'} ${change}%`;
-                changeEl.className = `text-sm font-semibold mt-1 ${change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-                
-                document.getElementById('uiFairValue').innerText = `Rp ${formatIDR(data.fair_value)}`;
-                document.getElementById('uiVolRatio').innerText = `${data.vol_ratio || 0}x`;
-                document.getElementById('uiSummary').innerText = data.summary || '-';
-                document.getElementById('uiSupport').innerText = `Rp ${formatIDR(data.support)}`;
-                document.getElementById('uiResistance').innerText = `Rp ${formatIDR(data.resistance)}`;
-                document.getElementById('uiSignal').innerText = `Signal: ${data.signal || '-'}`;
-                document.getElementById('uiPhase').innerText = `Phase: ${data.phase || '-'}`;
+// ══════════════════════════════════════
+// RENDER MAIN RESULT
+// ══════════════════════════════════════
+function renderResult(ticker,P,F,FV,BM,A){
+  const vc=A.keputusan==='BUY'?'buy':A.keputusan==='SELL'?'sell':'hold';
+  const vi=A.keputusan==='BUY'?'↑':A.keputusan==='SELL'?'↓':'→';
+  const cd=P.change>0?'up':P.change<0?'down':'flat';
+  const cs=P.change>=0?'+':'';
+  const sc=A.sentimen==='Bullish'?'positive':A.sentimen==='Bearish'?'negative':'neutral';
+  const rCol=A.risk_level>=7?'var(--sell)':A.risk_level>=4?'var(--hold)':'var(--buy)';
+  const rLbl=A.risk_level>=7?'HIGH':A.risk_level>=4?'MEDIUM':'LOW';
+  const p52H=P.week52_high?((P.price-P.week52_high)/P.week52_high*100).toFixed(1):null;
+  const p52L=P.week52_low?((P.price-P.week52_low)/P.week52_low*100).toFixed(1):null;
 
-                loading.classList.add('hidden');
-                resultArea.classList.remove('hidden');
-            } catch (err) {
-                // FIX #4: Tampilkan error di UI bukan hanya alert
-                loading.classList.add('hidden');
-                document.getElementById('uiPrice').innerText = `Rp 0`;
-                document.getElementById('uiChange').innerText = ``;
-                document.getElementById('uiFairValue').innerText = `Rp 0`;
-                document.getElementById('uiVolRatio').innerText = `0x`;
-                document.getElementById('uiSummary').innerText = `❌ Error: ${err.message || 'Koneksi terputus atau ticker salah.'}`;
-                document.getElementById('uiSupport').innerText = `Rp 0`;
-                document.getElementById('uiResistance').innerText = `Rp 0`;
-                document.getElementById('uiSignal').innerText = `Signal: ERR`;
-                document.getElementById('uiPhase').innerText = `Phase: N/A`;
-                resultArea.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-            }
+  // Fair value HTML
+  let fvHTML='';
+  if(FV){
+    const up=parseFloat(FV.upside);
+    const stLbl=FV.status==='undervalue'?'UNDERVALUE ↑':FV.status==='overvalue'?'OVERVALUE ↓':'FAIR VALUE →';
+    const stCls=FV.status==='undervalue'?'fv-undervalue':FV.status==='overvalue'?'fv-overvalue':'fv-fairvalue';
+    const mos=parseFloat(FV.mos);
+    const mosCol=mos>20?'var(--buy)':mos>0?'var(--hold)':'var(--sell)';
+    const gPos=Math.min(95,Math.max(5,50+up*.5));
+    const mCards=Object.values(FV.methods).map(m=>{
+      const mu=(m.price-P.price)/P.price*100;
+      return`<div class="fv-method-card">
+        <span class="fv-method-tag ${mu>15?'tag-low':mu<-15?'tag-high':'tag-fair'}">${mu>15?'MURAH':mu<-15?'MAHAL':'WAJAR'}</span>
+        <div class="fv-method-name">${m.abbr}</div>
+        <div class="fv-method-fullname">${m.method}</div>
+        <div class="fv-method-price">Rp ${fmt(m.price)}</div>
+        <div class="fv-method-upside" style="color:${upsideCol(mu)}">${mu>=0?'+':''}${mu.toFixed(1)}% dari harga</div>
+        <div class="fv-method-formula">${m.formula}</div>
+      </div>`;
+    }).join('');
+    fvHTML=`
+    <div class="fairvalue-section">
+      <div class="fv-header">
+        <div>
+          <div class="fv-title">⬡ Harga Wajar — ${FV.count} Metode Valuasi Fundamental</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;">Data real: EPS, Book Value, ROE, Dividen</div>
+        </div>
+        <div class="fv-verdict-label ${stCls}">${stLbl}</div>
+      </div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:5px;text-transform:uppercase;">Konsensus Berbobot</div>
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:10px;flex-wrap:wrap;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--gold);">Rp ${fmt(FV.consensus)}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 9px;border-radius:6px;background:rgba(${FV.status==='undervalue'?'0,230,118':FV.status==='overvalue'?'255,69,96':'255,179,0'},.15);color:${upsideCol(up)}">${up>=0?'+':''}${FV.upside}%</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:3px;">Harga saat ini Rp ${fmt(P.price)} · Selisih Rp ${fmt(Math.abs(FV.consensus-P.price))}</div>
+      </div>
+      <div class="fv-gauge-wrap">
+        <div class="fv-gauge-labels"><span>SANGAT MURAH</span><span>WAJAR</span><span>SANGAT MAHAL</span></div>
+        <div class="fv-gauge-track" style="position:relative;">
+          <div class="fv-gauge-price-label" id="gLbl" style="left:5%">Rp ${fmt(P.price)}</div>
+          <div class="fv-gauge-marker" id="gMark" style="left:5%"></div>
+        </div>
+        <div style="height:12px;"></div>
+      </div>
+      <div class="fv-methods-grid">${mCards}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;">Margin of Safety</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${mosCol}">${mos>0?'+':''}${FV.mos}% ${mos>20?'✓ AMAN':mos>0?'▸ TERBATAS':'✗ NEGATIF'}</div>
+      </div>
+      <div class="mos-track"><div class="mos-fill" id="mosFill" style="width:0%;background:${mosCol};"></div></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--border);margin-top:5px;">MoS = (Harga Wajar−Harga Saat Ini)÷Harga Wajar × 100 · MoS &gt;20% = zona aman beli</div>
+    </div>`;
+  }else{
+    fvHTML=`<div class="fairvalue-section" style="opacity:.65;"><div class="fv-title" style="margin-bottom:10px;">⬡ Harga Wajar — Data Fundamental Tidak Cukup</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);">Data EPS/Book Value tidak tersedia. Coba saham blue chip (BBCA, BBRI, TLKM, ASII).</div></div>`;
+  }
+
+  const html=`
+  <div class="badge-row">
+    <span class="badge badge-green">✓ HARGA REAL · Yahoo Finance</span>
+    <span class="badge badge-gold">⬡ HARGA WAJAR · ${FV?FV.count+' Metode':'N/A'}</span>
+    <span class="badge badge-orange">◉ BANDARMOLOGI · Vol+Flow</span>
+    <span class="badge badge-purple">◈ AI ANALISA · 5 Tahap</span>
+  </div>
+
+  <div class="verdict-card ${vc}">
+    <div class="verdict-glow"></div>
+    <div class="verdict-top">
+      <div>
+        <div class="stock-ticker-big">${ticker}</div>
+        <div class="stock-name">${P.company_name}</div>
+        <div class="stock-name" style="font-size:11px;margin-top:2px;">${P.sector} · ${P.industry||''}</div>
+      </div>
+      <div class="verdict-badge">
+        <div class="verdict-label">${vi} ${A.keputusan}</div>
+        <div class="confidence-wrap">
+          <div class="confidence-bar-outer"><div class="confidence-bar-inner" id="confBar"></div></div>
+          ${A.confidence}% CONFIDENCE
+        </div>
+      </div>
+    </div>
+    <div class="price-row">
+      <div class="price-now">Rp ${fmt(P.price)}</div>
+      <div class="price-change ${cd}">${cs}${fmt(P.change)} (${cs}${P.change_pct}%)</div>
+      <div class="price-meta">H:${fmt(P.high)} L:${fmt(P.low)} · Vol:${P.volume?fmtM(P.volume):'N/A'}${P.avg_volume?' · Avg:'+fmtM(P.avg_volume):''}</div>
+    </div>
+  </div>
+
+  <div class="metrics-grid">
+    <div class="metric-card"><div class="metric-label">Target Harga</div><div class="metric-value positive">${A.target_harga}</div></div>
+    <div class="metric-card"><div class="metric-label">Stop Loss</div><div class="metric-value negative">${A.stop_loss}</div></div>
+    <div class="metric-card"><div class="metric-label">Potensi Gain</div><div class="metric-value ${(A.potensi_gain||'').startsWith('+')?'positive':'negative'}">${A.potensi_gain}</div></div>
+    <div class="metric-card"><div class="metric-label">Harga Wajar</div><div class="metric-value gold">${FV?'Rp '+fmt(FV.consensus):'N/A'}</div>${FV?`<div class="metric-sub" style="color:${upsideCol(parseFloat(FV.upside))}">${parseFloat(FV.upside)>0?'Diskon':'Premium'} ${Math.abs(parseFloat(FV.upside)).toFixed(1)}%</div>`:''}</div>
+    <div class="metric-card"><div class="metric-label">Bandar Score</div><div class="metric-value" style="color:${BM?.score>=65?'var(--buy)':BM?.score<=35?'var(--sell)':'var(--hold)'}">${BM?.score||'-'}/100</div><div class="metric-sub">${BM?.verdict||'N/A'}</div></div>
+    <div class="metric-card"><div class="metric-label">52W Hi/Lo</div><div class="metric-value neutral" style="font-size:14px;">Rp ${fmt(P.week52_high)}</div><div class="metric-sub">Lo: Rp ${fmt(P.week52_low)}</div></div>
+    <div class="metric-card"><div class="metric-label">Sentimen</div><div class="metric-value ${sc}">${A.sentimen}</div><div class="metric-sub" style="color:${rCol}">Risk ${A.risk_level}/10 ${rLbl}</div></div>
+  </div>
+
+  ${fvHTML}
+
+  ${buildBandarHTML(P,BM)}
+
+  <div class="risk-section">
+    <div class="risk-label-wrap">
+      <div class="risk-title">Risk Meter</div>
+      <div class="risk-value" style="color:${rCol}">${rLbl} · ${A.risk_level}/10</div>
+    </div>
+    <div class="risk-bar-wrap">
+      <div class="risk-bar-track"><div class="risk-marker" id="riskMark"></div></div>
+    </div>
+  </div>
+
+  <div class="analysis-grid">
+    <div class="analysis-card">
+      <div class="card-title">// Indikator Teknikal</div>
+      ${Object.entries(A.teknikal||{}).map(([k,v])=>`<div class="ind-row"><span class="ind-n">${k}</span><span class="ind-v">${v}</span></div>`).join('')}
+    </div>
+    <div class="analysis-card">
+      <div class="card-title gold">// Data Fundamental Real</div>
+      ${[['EPS TTM',F.eps_ttm?'Rp '+fmt(F.eps_ttm):'N/A'],['EPS Growth',F.eps_growth_rate?(F.eps_growth_rate>0?'+':'')+F.eps_growth_rate.toFixed(1)+'%':'N/A'],['Book Value/Share',F.book_value_per_share?'Rp '+fmt(F.book_value_per_share):'N/A'],['DPS (Dividen)',F.dps?'Rp '+fmt(F.dps):'N/A'],['ROE',F.roe?F.roe.toFixed(1)+'%':'N/A'],['ROA',F.roa?F.roa.toFixed(1)+'%':'N/A'],['Net Margin',F.net_margin?F.net_margin.toFixed(1)+'%':'N/A'],['Debt/Equity',F.debt_to_equity!=null?F.debt_to_equity.toFixed(2)+'x':'N/A'],['Current Ratio',F.current_ratio!=null?F.current_ratio.toFixed(2)+'x':'N/A'],['Beta',F.beta!=null?F.beta.toFixed(2):'N/A']].map(([k,v])=>`<div class="ind-row"><span class="ind-n">${k}</span><span class="ind-v">${v}</span></div>`).join('')}
+    </div>
+  </div>
+
+  <div class="analysis-grid">
+    <div class="analysis-card">
+      <div class="card-title" style="color:var(--buy);">// Katalis Positif</div>
+      ${(A.katalis||[]).map(k=>`<div style="font-size:12px;color:var(--buy);padding:6px 0;border-bottom:1px solid rgba(26,48,69,.4);font-family:'JetBrains Mono',monospace;line-height:1.4;">✓ ${k}</div>`).join('')}
+    </div>
+    <div class="analysis-card">
+      <div class="card-title" style="color:var(--sell);">// Risiko Utama</div>
+      ${(A.risiko||[]).map(r=>`<div style="font-size:12px;color:var(--sell);padding:6px 0;border-bottom:1px solid rgba(26,48,69,.4);font-family:'JetBrains Mono',monospace;line-height:1.4;">⚠ ${r}</div>`).join('')}
+    </div>
+  </div>
+
+  <div class="ai-reasoning">
+    <div class="card-title">// Analisa AI — Ringkasan &amp; Rekomendasi Final</div>
+    <div class="ai-reasoning-text">${A.analisa}</div>
+  </div>`;
+
+  const el=document.getElementById('result');
+  el.innerHTML=html;
+  el.style.display='block';
+
+  setTimeout(()=>{
+    const cb=document.getElementById('confBar');if(cb)cb.style.width=A.confidence+'%';
+    const rm=document.getElementById('riskMark');if(rm)rm.style.left=(A.risk_level/10*100)+'%';
+    if(FV){
+      const up=parseFloat(FV.upside);
+      const gp=Math.min(95,Math.max(5,50+up*.5));
+      const gm=document.getElementById('gMark');if(gm)gm.style.left=gp+'%';
+      const gl=document.getElementById('gLbl');if(gl)gl.style.left=gp+'%';
+      const mf=document.getElementById('mosFill');if(mf)mf.style.width=Math.min(100,Math.max(0,parseFloat(FV.mos)))+'%';
+    }
+    // Foreign flow bar animate
+    if(BM){
+      const ff30 = BM.foreign_net_buy_30d;
+      const ffEl = document.getElementById('ffBar');
+      if(ffEl && ff30 != null){
+        const pct = Math.min(40, Math.abs(ff30/8));
+        if(ff30 >= 0){
+          ffEl.style.marginLeft = '50%';
+          ffEl.style.width = pct+'%';
+        } else {
+          ffEl.style.marginLeft = (50-pct)+'%';
+          ffEl.style.width = pct+'%';
         }
+      }
+    }
+    // Volume bars animate
+    document.querySelectorAll('.vb[data-h]').forEach((b,i)=>{
+      const h=b.getAttribute('data-h');
+      if(h) setTimeout(()=>{b.style.height=h+'%';},50*i);
+    });
+  },200);
+}
 
-        // Tekan Enter untuk Analyze
-        document.getElementById('tickerInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') analyzeStock();
-        });
-    </script>
+function renderError(msg){
+  document.getElementById('result').innerHTML=`<div class="error-card">⚠ Error: ${msg}<br><br>Tips:<br>• Kode saham benar (BBCA, TLKM, GOTO, ANTM)<br>• Saham kecil mungkin data terbatas<br>• Coba lagi beberapa detik</div>`;
+  document.getElementById('result').style.display='block';
+}
+
+function addToHistory(ticker,P,A){
+  analysisHistory.unshift({ticker,signal:A.keputusan,confidence:A.confidence,price:P.price,change_pct:P.change_pct,time:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),P,A});
+  if(analysisHistory.length>10)analysisHistory.pop();
+  renderHistory();
+}
+function renderHistory(){
+  if(!analysisHistory.length)return;
+  document.getElementById('history-section').style.display='block';
+  document.getElementById('historyList').innerHTML=analysisHistory.map((h,i)=>`
+    <div class="history-item" onclick="loadHistory(${i})">
+      <span class="hist-ticker">${h.ticker}</span>
+      <span class="hist-signal ${h.signal.toLowerCase()}">${h.signal}</span>
+      <span class="hist-info">Rp ${fmt(h.price)} · ${h.change_pct>=0?'+':''}${h.change_pct}% · ${h.confidence}% conf</span>
+      <span class="hist-time">${h.time}</span>
+    </div>`).join('');
+}
+function loadHistory(i){
+  const h=analysisHistory[i];
+  document.getElementById('tickerInput').value=h.ticker;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
 </body>
 </html>

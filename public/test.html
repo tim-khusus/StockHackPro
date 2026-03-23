@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAHAM.AI — Auto Test</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#050a0f;color:#e0f0ff;font-family:'JetBrains Mono',monospace;padding:24px;font-size:13px;}
+h1{color:#00ff88;font-size:20px;margin-bottom:4px;}
+.sub{color:#4a7a9b;margin-bottom:24px;font-size:12px;}
+.suite{background:#0a1520;border:1px solid #1a3045;border-radius:10px;padding:16px;margin-bottom:16px;}
+.suite-title{font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #1a3045;}
+.test{display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid rgba(26,48,69,.4);}
+.test:last-child{border-bottom:none;}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;}
+.pass{background:rgba(0,230,118,.15);color:#00e676;}
+.fail{background:rgba(255,69,96,.15);color:#ff4560;}
+.skip{background:rgba(255,179,0,.1);color:#ffb300;}
+.test-name{flex:1;color:#8ab8d4;}
+.test-detail{font-size:11px;color:#4a7a9b;margin-top:2px;}
+.err-msg{font-size:11px;color:#ff4560;margin-top:2px;word-break:break-all;}
+.summary{display:flex;gap:16px;padding:16px;background:#0a1520;border-radius:10px;margin-bottom:16px;flex-wrap:wrap;}
+.sum-item{text-align:center;}
+.sum-num{font-size:28px;font-weight:800;line-height:1;}
+.sum-lbl{font-size:10px;color:#4a7a9b;letter-spacing:2px;margin-top:2px;}
+.run-btn{background:linear-gradient(135deg,#0066aa,#00d4ff);border:none;color:white;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:12px 28px;border-radius:8px;cursor:pointer;letter-spacing:1px;margin-bottom:20px;}
+.run-btn:hover{opacity:.9;}
+.render-preview{margin-top:16px;}
+.render-preview iframe{width:100%;height:700px;border:1px solid #1a3045;border-radius:8px;}
+#status{color:#4a7a9b;font-size:12px;margin-bottom:12px;min-height:16px;}
+</style>
+</head>
+<body>
+<h1>🧪 SAHAM.AI — Automated Test</h1>
+<p class="sub">Test semua fungsi dengan data mock. Tidak ada API call ke Claude maupun Yahoo Finance.</p>
+
+<button class="run-btn" id="runBtn" onclick="runAll()">▶ Jalankan Semua Test</button>
+<div id="status"></div>
+<div id="summary" style="display:none"></div>
+<div id="suites"></div>
+<div class="render-preview" id="renderPreview" style="display:none">
+  <p style="color:#f5c842;margin-bottom:8px;font-size:12px;">▼ Hasil Render UI (BBCA mock):</p>
+  <iframe id="appFrame" src="/index.html"></iframe>
+</div>
+
+<script>
+// ─── Mock Data ──────────────────────────────────────────────────────
+const P = {
+  ticker:'BBCA', price:6775, change:25, change_pct:0.37,
+  open:6750, high:6825, low:6725, volume:160903900, avg_volume:154674757,
+  prev_close:6750, week52_high:9800, week52_low:6375,
+  market_cap_str:'Rp 836 T', company_name:'PT Bank Central Asia Tbk',
+  sector:'Financial Services', industry:'Banks',
+  avg_vol_30d:154674757, dps_from_chart:305,
+  sessions:[
+    {session:'T',  date:'20/03',vol:160903900,price:6775,change_pct:0.37, is_estimated:false},
+    {session:'T-1',date:'19/03',vol:127757500,price:6750,change_pct:-1.82,is_estimated:false},
+    {session:'T-2',date:'18/03',vol:107940600,price:6875,change_pct:-0.36,is_estimated:false},
+    {session:'T-3',date:'17/03',vol:98787400, price:6900,change_pct:1.10, is_estimated:false},
+    {session:'T-4',date:'14/03',vol:91723400, price:6825,change_pct:-2.15,is_estimated:false},
+    {session:'T-5',date:'13/03',vol:129977900,price:6975,change_pct:1.45, is_estimated:false},
+    {session:'T-6',date:'12/03',vol:150426400,price:6875,change_pct:-1.79,is_estimated:false},
+    {session:'T-7',date:'11/03',vol:102725700,price:7000,change_pct:-1.41,is_estimated:false},
+    {session:'T-8',date:'10/03',vol:110256300,price:7100,change_pct:3.27, is_estimated:false},
+    {session:'T-9',date:'07/03',vol:95000000, price:6875,change_pct:-0.5, is_estimated:false},
+  ]
+};
+const F = {
+  eps_ttm:523, eps_growth_rate:8.5, book_value_per_share:3241,
+  dps:305, dividend_yield:4.5, dividend_growth_rate:5,
+  roe:21.5, roa:3.2, net_margin:35.8, revenue_growth:12.3,
+  debt_to_equity:null, current_ratio:null,
+  pe_ratio:12.95, pb_ratio:2.09, beta:0.89, cost_of_equity:11.4
+};
+const BM_RAW = {
+  avg_vol_10d:154674757, avg_vol_30d:154674757,
+  vol_sessions: P.sessions,
+  foreign_net_buy_today:null, foreign_net_buy_5d:null, foreign_net_buy_30d:850,
+  foreign_flow_trend:'net_buy', foreign_ownership_pct:45.2,
+  top_broker_buy: [{broker:'MS',name:'Morgan Stanley',net_buy_lot:12500000,value_bn:84.7},{broker:'RX',name:'Macquarie',net_buy_lot:8300000,value_bn:56.2},{broker:'YP',name:'Mirae',net_buy_lot:6100000,value_bn:41.3}],
+  top_broker_sell:[{broker:'DB',name:'Deutsche',net_sell_lot:9200000,value_bn:62.4},{broker:'UB',name:'UBS',net_sell_lot:5400000,value_bn:36.6},{broker:'CT',name:'Citi',net_sell_lot:3800000,value_bn:25.7}],
+  broker_data_available:false, dominant_buyer_type:'asing', dominant_seller_type:'asing',
+  bandar_score:72, bandar_phase:'accumulation_phase_2',
+  wyckoff_event:'SOS', wyckoff_desc:'Sign of Strength — harga bounce dari support dengan volume tinggi',
+  institutional_signal:'accumulation', unusual_vol_detected:true,
+  unusual_vol_desc:'Volume 1.04x rata-rata — aktivitas institusional di atas normal',
+  price_vol_divergence:false, divergence_type:'none',
+  vwap_relation:'above_vwap', accumulation_distribution_line:'positive',
+  vol_trend_10d:'stable', data_confidence:'medium',
+  bandar_summary:'Asing net buy Rp 850M dalam 30 hari. Morgan Stanley dan Macquarie buyer dominan. Volume stabil di atas rata-rata.',
+  data_sources_used:['Web Search','Yahoo Finance Chart'],
+  big_block_trades_today:null, candle_volume_pattern:null,
+};
+const A = {
+  keputusan:'BUY', confidence:72,
+  target_harga:'Rp 7.400', stop_loss:'Rp 6.400', potensi_gain:'+9.2%', risk_level:5,
+  teknikal:{
+    'RSI':'RSI ~46 — Oversold ringan',
+    'Posisi 52W':'34% dari range',
+    'Momentum':'Sideways bias bullish',
+    'Volume':'1.04x rata-rata',
+    'Support':'Rp 6.375',
+    'Resistance':'Rp 7.400',
+    'Tren':'Potensi reversal'
+  },
+  sentimen:'Bullish',
+  katalis:['Foreign net buy konsisten','Valuasi menarik','Dividen yield 4.5%'],
+  risiko:['Tekanan jual global','Harga di bawah MA200'],
+  analisa:'BBCA di Rp 6.775 dengan harga wajar ~Rp 8.100 (diskon 16%). Sinyal bandar akumulasi score 72/100. BUY target Rp 7.400 stop loss Rp 6.400.'
+};
+
+// ─── Test runner ────────────────────────────────────────────────────
+let results = [];
+let appWin  = null;
+
+function test(name, fn) {
+  try {
+    const val = fn();
+    results.push({name, pass:true, detail: val != null ? String(val).slice(0,80) : 'OK'});
+  } catch(e) {
+    results.push({name, pass:false, err: e.message});
+  }
+}
+
+function renderSuites(groups) {
+  const cont = document.getElementById('suites');
+  cont.innerHTML = '';
+  let totalPass = 0, totalFail = 0;
+
+  groups.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'suite';
+    const passCount = g.tests.filter(t=>t.pass).length;
+    const color = passCount === g.tests.length ? '#00e676' : passCount === 0 ? '#ff4560' : '#ffb300';
+    div.innerHTML = `<div class="suite-title" style="color:${color}">${g.name} — ${passCount}/${g.tests.length} passed</div>`;
+    g.tests.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'test';
+      row.innerHTML = `<span class="badge ${t.pass?'pass':'fail'}">${t.pass?'PASS':'FAIL'}</span>
+        <div>
+          <div class="test-name">${t.name}</div>
+          ${t.pass && t.detail ? `<div class="test-detail">${t.detail}</div>` : ''}
+          ${!t.pass ? `<div class="err-msg">❌ ${t.err}</div>` : ''}
+        </div>`;
+      div.appendChild(row);
+      if(t.pass) totalPass++; else totalFail++;
+    });
+    cont.appendChild(div);
+  });
+
+  // Summary
+  document.getElementById('summary').style.display = 'flex';
+  document.getElementById('summary').innerHTML = `
+    <div class="sum-item"><div class="sum-num" style="color:#00e676">${totalPass}</div><div class="sum-lbl">PASSED</div></div>
+    <div class="sum-item"><div class="sum-num" style="color:${totalFail?'#ff4560':'#4a7a9b'}">${totalFail}</div><div class="sum-lbl">FAILED</div></div>
+    <div class="sum-item"><div class="sum-num" style="color:#4a7a9b">${totalPass+totalFail}</div><div class="sum-lbl">TOTAL</div></div>
+    <div class="sum-item"><div class="sum-num" style="color:${totalFail?'#ff4560':'#00e676'}">${totalFail?'❌':'✅'}</div><div class="sum-lbl">${totalFail?'ADA ERROR':'SEMUA OK'}</div></div>`;
+}
+
+async function runAll() {
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('status').textContent = 'Memuat app...';
+  document.getElementById('suites').innerHTML = '';
+  document.getElementById('summary').style.display = 'none';
+  results = [];
+
+  // Load app in hidden iframe
+  await new Promise(resolve => {
+    const iframe = document.createElement('iframe');
+    iframe.src = '/index.html';
+    iframe.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;';
+    iframe.onload = () => { appWin = iframe.contentWindow; resolve(); };
+    document.body.appendChild(iframe);
+  });
+
+  document.getElementById('status').textContent = 'Menjalankan test...';
+
+  const groups = [];
+
+  // ── Suite 1: Helper functions ────────────────────────────
+  results = [];
+  test('fmt(6775) → "6.775"',           () => { const r=appWin.fmt(6775); if(r!=='6.775') throw new Error('got '+r); return r; });
+  test('fmt(null) → "-"',               () => { const r=appWin.fmt(null); if(r!=='-') throw new Error('got '+r); return r; });
+  test('fmtM(160903900) → "160.9M"',    () => { const r=appWin.fmtM(160903900); if(!r.includes('M')) throw new Error('got '+r); return r; });
+  test('toN("21.5") → 21.5',            () => { const r=appWin.toN('21.5'); if(r!==21.5) throw new Error('got '+r); return r; });
+  test('toN(null) → null',              () => { const r=appWin.toN(null); if(r!==null) throw new Error('got '+r); return 'null'; });
+  test('toN("abc") → null',             () => { const r=appWin.toN('abc'); if(r!==null) throw new Error('got '+r); return 'null'; });
+  test('upsideCol(20) → green (buy)',   () => { const r=appWin.upsideCol(20); if(!r.includes('buy')) throw new Error('got '+r); return r; });
+  test('upsideCol(-20) → red (sell)',   () => { const r=appWin.upsideCol(-20); if(!r.includes('sell')) throw new Error('got '+r); return r; });
+  test('upsideCol(5) → yellow (hold)',  () => { const r=appWin.upsideCol(5); if(!r.includes('hold')) throw new Error('got '+r); return r; });
+  groups.push({name:'1. Helper Functions (fmt, toN, upsideCol)', tests:[...results]});
+
+  // ── Suite 2: calcFairValue ────────────────────────────────
+  results = [];
+  test('FV dengan data lengkap → object',      () => { const fv=appWin.calcFairValue(P,F); if(!fv) throw new Error('null'); return 'consensus Rp '+fv.consensus; });
+  test('FV.consensus > 0',                      () => { const fv=appWin.calcFairValue(P,F); if(fv.consensus<=0) throw new Error(fv.consensus); return fv.consensus; });
+  test('FV.status ada (undervalue/overvalue/fair)', () => { const fv=appWin.calcFairValue(P,F); if(!['undervalue','overvalue','fair'].includes(fv.status)) throw new Error(fv.status); return fv.status; });
+  test('FV.upside adalah string angka',         () => { const fv=appWin.calcFairValue(P,F); if(isNaN(parseFloat(fv.upside))) throw new Error(fv.upside); return fv.upside+'%'; });
+  test('FV.mos adalah string angka',            () => { const fv=appWin.calcFairValue(P,F); if(isNaN(parseFloat(fv.mos))) throw new Error(fv.mos); return fv.mos+'%'; });
+  test('FV.count >= 1',                         () => { const fv=appWin.calcFairValue(P,F); if(fv.count<1) throw new Error(fv.count); return fv.count+' metode'; });
+  test('FV graham method ada',                  () => { const fv=appWin.calcFairValue(P,F); if(!fv.methods.graham) throw new Error('tidak ada'); return 'Rp '+fv.methods.graham.price; });
+  test('FV per method ada',                     () => { const fv=appWin.calcFairValue(P,F); if(!fv.methods.per) throw new Error('tidak ada'); return 'Rp '+fv.methods.per.price; });
+  test('FV EPS negatif → null (GOTO case)',     () => { const fv=appWin.calcFairValue({price:54},{eps_ttm:-4,book_value_per_share:38,roe:-11,cost_of_equity:14}); if(fv!==null) throw new Error('seharusnya null'); return 'null ✓'; });
+  test('FV no data → null',                     () => { const fv=appWin.calcFairValue({price:1000},{}); if(fv!==null) throw new Error('seharusnya null'); return 'null ✓'; });
+  groups.push({name:'2. calcFairValue — Harga Wajar', tests:[...results]});
+
+  // ── Suite 3: calcBandarSignals ────────────────────────────
+  results = [];
+  let BM;
+  test('calcBandarSignals tidak error',        () => { BM=appWin.calcBandarSignals(P,BM_RAW); return 'OK'; });
+  test('BM.obvTrend ada (rising/falling/sideways)', () => { if(!BM||!['rising','falling','sideways'].includes(BM.obvTrend)) throw new Error(BM?.obvTrend); return BM.obvTrend; });
+  test('BM.volRatio > 0',                      () => { if(!BM||BM.volRatio<=0) throw new Error(BM?.volRatio); return BM.volRatio.toFixed(2)+'x'; });
+  test('BM.pvSignal ada',                      () => { const valid=['bullish_confirmation','bearish_confirmation','weak_rally','weak_decline']; if(!BM||!valid.includes(BM.pvSignal)) throw new Error(BM?.pvSignal); return BM.pvSignal; });
+  test('BM.score 0-100',                       () => { if(!BM||BM.score<0||BM.score>100) throw new Error(BM?.score); return BM.score+'/100'; });
+  test('BM.verdict ada',                       () => { const valid=['akumulasi','distribusi','netral']; if(!BM||!valid.includes(BM.verdict)) throw new Error(BM?.verdict); return BM.verdict; });
+  test('BM.volTrend5d adalah angka/null',      () => { if(!BM) throw new Error('BM null'); if(BM.volTrend5d!==null&&isNaN(parseFloat(BM.volTrend5d))) throw new Error(BM.volTrend5d); return BM.volTrend5d !== null ? BM.volTrend5d+'%' : 'null OK'; });
+  test('BM.foreignStrength ada',               () => { if(!BM||!BM.foreignStrength) throw new Error('kosong'); return BM.foreignStrength; });
+  groups.push({name:'3. calcBandarSignals — OBV & Volume', tests:[...results]});
+
+  // ── Suite 4: buildBandarHTML ──────────────────────────────
+  results = [];
+  const bmFull = appWin.calcBandarSignals(P, BM_RAW);
+  test('buildBandarHTML tidak error',          () => { const h=appWin.buildBandarHTML(P,bmFull); if(!h) throw new Error('null'); return 'OK'; });
+  test('buildBandarHTML return string HTML',   () => { const h=appWin.buildBandarHTML(P,bmFull); if(typeof h!=='string') throw new Error(typeof h); return 'string ✓'; });
+  test('HTML berisi bandar-section class',     () => { const h=appWin.buildBandarHTML(P,bmFull); if(!h.includes('bandar-section')) throw new Error('class tidak ada'); return 'OK'; });
+  test('HTML berisi score bandar',             () => { const h=appWin.buildBandarHTML(P,bmFull); if(!h.includes('72')) throw new Error('score 72 tidak ada'); return 'OK'; });
+  test('HTML berisi foreign flow label',       () => { const h=appWin.buildBandarHTML(P,bmFull); if(!h.includes('NET BUY')) throw new Error('NET BUY tidak ada'); return 'OK'; });
+  test('buildBandarHTML null bm → fallback',   () => { const h=appWin.buildBandarHTML(P,null); if(!h) throw new Error('null'); return 'fallback OK'; });
+  groups.push({name:'4. buildBandarHTML — Render Bandarmologi', tests:[...results]});
+
+  // ── Suite 5: renderResult (full UI) ──────────────────────
+  results = [];
+  const FV = appWin.calcFairValue(P, F);
+  const BM2 = appWin.calcBandarSignals(P, BM_RAW);
+  test('renderResult tidak error',             () => { appWin.renderResult('BBCA',P,F,FV,BM2,A); return 'OK'; });
+  test('#result div visible setelah render',   () => { const el=appWin.document.getElementById('result'); if(el.style.display==='none') throw new Error('masih display:none'); return el.style.display||'block'; });
+  test('HTML berisi BBCA ticker',              () => { const h=appWin.document.getElementById('result').innerHTML; if(!h.includes('BBCA')) throw new Error('BBCA tidak ada'); return 'OK'; });
+  test('HTML berisi harga Rp 6.775',           () => { const h=appWin.document.getElementById('result').innerHTML; if(!h.includes('6.775')&&!h.includes('6775')) throw new Error('harga tidak ada'); return 'OK'; });
+  test('HTML berisi keputusan BUY',            () => { const h=appWin.document.getElementById('result').innerHTML; if(!h.includes('BUY')) throw new Error('BUY tidak ada'); return 'OK'; });
+  test('HTML berisi harga wajar section',      () => { const h=appWin.document.getElementById('result').innerHTML; if(!h.includes('fairvalue-section')) throw new Error('section tidak ada'); return 'OK'; });
+  test('HTML berisi bandar section',           () => { const h=appWin.document.getElementById('result').innerHTML; if(!h.includes('bandar-section')) throw new Error('section tidak ada'); return 'OK'; });
+  test('HTML berisi target harga',             () => { const h=appWin.document.getElementById('result').innerHTML; if(!h.includes('7.400')&&!h.includes('7400')) throw new Error('target tidak ada'); return 'OK'; });
+  test('Render FV null tidak crash',           () => { appWin.renderResult('GOTO',{...P,ticker:'GOTO',price:54,week52_high:89,week52_low:49},{eps_ttm:-4,cost_of_equity:14},null,BM2,A); return 'OK'; });
+  groups.push({name:'5. renderResult — Full UI Render', tests:[...results]});
+
+  // ── Suite 6: renderError & history ───────────────────────
+  results = [];
+  test('renderError tidak crash',              () => { appWin.renderError('Test error message'); return 'OK'; });
+  test('addToHistory tidak crash',             () => { appWin.addToHistory('BBCA',P,A); return 'OK'; });
+  test('renderHistory tidak crash',            () => { appWin.renderHistory(); return 'OK'; });
+  test('parseJSON valid JSON',                 () => { const r=appWin.parseJSON('{"a":1}'); if(r.a!==1) throw new Error('parse gagal'); return 'OK'; });
+  test('parseJSON dengan teks sebelum JSON',   () => { const r=appWin.parseJSON('Berikut hasilnya: {"a":2}'); if(r.a!==2) throw new Error('parse gagal'); return 'OK'; });
+  test('parseJSON invalid → throw',           () => { try{appWin.parseJSON('bukan json');throw new Error('seharusnya throw');}catch(e){if(e.message==='seharusnya throw')throw e; return 'throw ✓';} });
+  groups.push({name:'6. Utility — Error, History, parseJSON', tests:[...results]});
+
+  // ── Render summary ────────────────────────────────────────
+  renderSuites(groups);
+  document.getElementById('status').textContent = 'Selesai.';
+  document.getElementById('runBtn').disabled = false;
+
+  // Show live render preview
+  document.getElementById('renderPreview').style.display = 'block';
+  const previewFrame = document.getElementById('appFrame');
+  previewFrame.onload = () => {
+    try {
+      const pw = previewFrame.contentWindow;
+      const fv2 = pw.calcFairValue(P,F);
+      const bm2 = pw.calcBandarSignals(P,BM_RAW);
+      pw.renderResult('BBCA',P,F,fv2,bm2,A);
+    } catch(e) { console.warn('Preview render:', e); }
+  };
+}
+</script>
+</body>
+</html>

@@ -360,20 +360,21 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
 
   const prompt =
     'Search IDX data for ' + ticker + '.JK:\n' +
-    '1. "' + ticker + ' EPS book value ROE laporan keuangan 2024"\n' +
+    '1. "' + ticker + ' EPS book value ROE laporan keuangan 2024 2025"\n' +
     '2. "' + ticker + ' foreign net buy sell IDX asing 2025"\n\n' +
     'Data REAL Yahoo Finance:\n' +
     'Harga: Rp ' + p.price + ' | Chg: ' + p.change_pct + '% | Vol: ' + (p.volume/1e6).toFixed(1) + 'M | Avg30D: ' + ((p.avg_volume||0)/1e6).toFixed(1) + 'M\n' +
     '52W: Rp ' + p.week52_low + '-' + p.week52_high + ' | Pos52W: ' + pos52 + ' | RSIaprx: ' + rsiEst + '\n' +
     'Historis REAL: ' + sessStr + '\n' +
     (dpsLine ? dpsLine + '\n' : '') +
-    '\nPENTING: EPS dan Book Value dalam Rupiah per saham. Contoh BBCA: EPS ~523, BV ~3241.\n' +
-    'Semua nilai numerik harus angka (bukan string). Isi berdasarkan data NYATA dari pencarian.\n\n' +
+    '\nPENTING: Cari data TERBARU 2024-2025. EPS dan Book Value dalam Rupiah PER SAHAM (bukan miliar).\n' +
+    'JANGAN hitung PER/PBV sendiri — saya akan hitung dari harga real di atas.\n' +
+    'Contoh BBCA: EPS ~466, Book Value ~2280, ROE ~23%, DPS ~200.\n\n' +
     'Return ONLY valid JSON, no markdown:\n' +
     '{"f":{"eps_ttm":null,"eps_growth_rate":null,"book_value_per_share":null,"dps":' + dpsVal + ',"dividend_yield":null,"roe":null,"roa":null,"net_margin":null,"debt_to_equity":null,"current_ratio":null,"pe_ratio":null,"pb_ratio":null,"beta":null,"cost_of_equity":null},' +
     '"bm":{"ff_30d":null,"ff_trend":"neutral","foreign_own_pct":null,"bb":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"bs":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"broker_real":false,"buyer_type":"unknown","score":50,"phase":"neutral","wyckoff":null,"wyckoff_desc":null,"inst_sig":"neutral","unusual_vol":false,"unusual_desc":null,"pv_div":false,"div_type":"none","vwap":"at_vwap","adl":"neutral","vol_trend":"stable","confidence":"low","summary":""},' +
     '"a":{"keputusan":"HOLD","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"","Posisi 52W":"","Momentum":"","Volume":"","Support":"Rp ' + p.week52_low + '","Resistance":"Rp ' + p.week52_high + '","Tren":""},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}}' +
-    '\nIsi semua field null dengan data real. Analisa berdasarkan fakta.';
+    '\nIsi semua null dengan data TERBARU. Untuk f: cukup isi eps_ttm, book_value_per_share, roe, roa, net_margin, debt_to_equity, current_ratio, beta, eps_growth_rate, dps. JANGAN isi pe_ratio dan pb_ratio.';
 
   const txt = await callClaude([{role:'user', content: prompt}], true, 1600);
   const d = parseJSON(txt);
@@ -385,9 +386,12 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
   Object.keys(f).forEach(k => { f[k] = nn(f[k]); });
   if (dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
   if (!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5 + f.beta*5.5).toFixed(2)) : 11.0;
-  if (!f.pe_ratio  && f.eps_ttm > 0)              f.pe_ratio  = parseFloat((p.price/f.eps_ttm).toFixed(2));
-  if (!f.pb_ratio  && f.book_value_per_share > 0) f.pb_ratio  = parseFloat((p.price/f.book_value_per_share).toFixed(2));
-  if (!f.dividend_yield && f.dps > 0)             f.dividend_yield = parseFloat((f.dps/p.price*100).toFixed(2));
+
+  // SELALU hitung ulang PER & PBV dari harga REAL Yahoo Finance
+  // Jangan pakai nilai dari Claude — bisa pakai harga lama dari training data
+  if (f.eps_ttm > 0)              f.pe_ratio  = parseFloat((p.price / f.eps_ttm).toFixed(2));
+  if (f.book_value_per_share > 0) f.pb_ratio  = parseFloat((p.price / f.book_value_per_share).toFixed(2));
+  if (f.dps > 0)                  f.dividend_yield = parseFloat((f.dps / p.price * 100).toFixed(2));
 
   const r = d.bm;
   r.ff_30d = nn(r.ff_30d); r.foreign_own_pct = nn(r.foreign_own_pct); r.score = nn(r.score) ?? 50;

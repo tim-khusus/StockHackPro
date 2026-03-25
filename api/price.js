@@ -117,11 +117,18 @@ export default async function handler(req, res) {
         const ks  = qsJson?.quoteSummary?.result?.[0]?.defaultKeyStatistics || {};
         
         // 👇 PERBAIKAN: Mengambil angka dari properti ".raw" milik Yahoo
-        const getVal = (obj) => (obj && obj.raw !== undefined) ? obj.raw : null;
-        const pct = (obj) => { 
-          const v = getVal(obj); 
-          return v !== null ? parseFloat((Math.abs(v) > 1 ? v : v * 100).toFixed(2)) : null; 
-        };
+       const getVal = (obj) => {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj === 'number') return obj;
+  if (obj.raw !== undefined) return obj.raw;
+  return null;
+};
+
+// Fix pct: Yahoo selalu kirim ROE/ROA/margin dalam desimal → kalikan 100
+const pct = (obj) => {
+  const v = getVal(obj);
+  return v !== null ? parseFloat((v * 100).toFixed(2)) : null;
+};
 
         // EPS — Mengambil dari Trailing (TTM) atau Forward EPS
         const eps_ttm = getVal(ks.trailingEps) || getVal(ks.forwardEps);
@@ -138,14 +145,16 @@ export default async function handler(req, res) {
 
         // Debt to Equity — Yahoo mengirim persen (misal: 19.58), kita ubah ke rasio (0.19x)
         const raw_debt = getVal(fd.debtToEquity);
-        const debt_to_equity = raw_debt !== null ? parseFloat((raw_debt / 100).toFixed(2)) : null;
+const debt_to_equity = raw_debt !== null
+  ? parseFloat(raw_debt.toFixed(2))
+  : null;
 
         // Current Ratio & Beta
         const current_ratio = getVal(fd.currentRatio) !== null ? parseFloat(getVal(fd.currentRatio).toFixed(2)) : null;
         const beta = getVal(ks.beta);
 
         // EPS growth (trailing)
-        const eps_growth_rate = pct(ks.earningsQuarterlyGrowth ?? fd.earningsGrowth);
+        const eps_growth_rate = pct(ks.earningsQuarterlyGrowth) ?? null;
 
         fundamental = {
           found: eps_ttm !== null || book_value !== null || roe_ttm !== null,

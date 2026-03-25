@@ -277,7 +277,7 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
     <div class="loading-text" id="loadingText">Memulai analisa...</div>
     <div class="loading-sub" id="loadingSub">Mengambil data dari internet</div>
     <div class="loading-steps">
-      <div class="loading-step" id="step1">▸ [1/2] Harga real-time — Yahoo Finance (tanpa AI)</div>
+      <div class="loading-step" id="step1">▸ [1/2] Harga + Fundamental — Yahoo Finance (tanpa AI)</div>
       <div class="loading-step" id="step2">▸ ────────────────────────────────────────────────</div>
       <div class="loading-step" id="step3">▸ [2/2] Gemini AI — Fundamental · Bandarmologi · Rekomendasi</div>
       <div class="loading-step" id="step4">▸ Kalkulasi harga wajar + render hasil...</div>
@@ -369,60 +369,41 @@ function parseJSON(text){
 // ══════════════════════════════════════
 // Ambil harga REAL dari /api/price (Yahoo Finance chart v8)
 async function fetchPrice(ticker) {
-  try {
-    const [priceRes, fundRes] = await Promise.all([
-      fetch(`/api/price?ticker=${ticker}`),
-      fetch(`/api/fundamental?ticker=${ticker}`).catch(err => {
-        console.error("Gagal menghubungi /api/fundamental:", err);
-        return null;
-      }) 
-    ]);
+  const r = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const d = await r.json();
+  if (!d.found) throw new Error(`${ticker} tidak ditemukan. ${d.reason||''}`);
 
-    if (!priceRes.ok) throw new Error(`HTTP ${priceRes.status}`);
-    const d = await priceRes.json();
-    if (!d.found) throw new Error('Data saham tidak ditemukan');
+  // Fundamental dari Yahoo quoteSummary (sudah digabung di price.js)
+  const F = d.fundamental || {};
+  const hasFundamental = F.found === true;
 
-    let fData = {};
-    if (fundRes) {
-      if (fundRes.ok) {
-        fData = await fundRes.json();
-        console.log("✅ Data FMP Berhasil Ditarik:", fData); // <- Indikator Sukses
-      } else {
-        const errText = await fundRes.text();
-        console.error("❌ Error dari fundamental.js:", fundRes.status, errText); // <- Indikator Error Vercel
-      }
-    }
-    return {
-      ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
-      open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
-      prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
-      sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
-      dps_from_chart: d.dps_from_chart || null,
-      last_updated: d.last_updated,
-      company_name: d.company_name,
-      sector: d.sector,
-      industry: d.industry,
-      
-      // Data fundamental dari FMP (null jika FMP tidak tersedia)
-      fmp_found:        fData.found        ?? false,
-      eps_ttm:          fData.eps_ttm          ?? null,
-      eps_growth_rate:  fData.eps_growth_rate  ?? null,
-      book_value:       fData.book_value        ?? null,
-      roe_ttm:          fData.roe_ttm           ?? null,
-      roa_ttm:          fData.roa_ttm           ?? null,
-      net_margin:       fData.net_margin        ?? null,
-      debt_to_equity:   fData.debt_to_equity    ?? null,
-      current_ratio:    fData.current_ratio     ?? null,
-      beta_fmp:         fData.beta              ?? null,
-      dps_fmp:          fData.dps               ?? null,
-      dividend_yield:   fData.dividend_yield    ?? null,
-      pe_ratio_ttm:     fData.pe_ratio_ttm      ?? null,
-      pb_ratio_ttm:     fData.pb_ratio_ttm      ?? null,
-      company_name_fmp: fData.company_name      ?? null
-    };
-  } catch(e) {
-    throw e;
-  }
+  return {
+    ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
+    open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
+    prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
+    sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
+    dps_from_chart: d.dps_from_chart || null,
+    last_updated: d.last_updated,
+    company_name: d.company_name,
+    sector: d.sector,
+    industry: d.industry,
+    // Fundamental dari Yahoo Finance quoteSummary
+    fmp_found:       hasFundamental,
+    eps_ttm:         F.eps_ttm         ?? null,
+    book_value:      F.book_value      ?? null,
+    roe_ttm:         F.roe_ttm         ?? null,
+    roa_ttm:         F.roa_ttm         ?? null,
+    net_margin:      F.net_margin      ?? null,
+    debt_to_equity:  F.debt_to_equity  ?? null,
+    current_ratio:   F.current_ratio   ?? null,
+    beta_fmp:        F.beta            ?? null,
+    eps_growth_rate: F.eps_growth_rate ?? null,
+    dps_fmp:         null,
+    dividend_yield:  null,
+    pe_ratio_ttm:    null,
+    pb_ratio_ttm:    null,
+  };
 }
 
 // ═══════════════════════════════════════════════════════
@@ -442,39 +423,19 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
   const dpsLine = dpsFromChart ? 'DPS real dari chart: Rp ' + dpsFromChart : '';
   const dpsVal  = dpsFromChart ? dpsFromChart : 'null';
 
-  // Jika FMP berhasil, Gemini tidak perlu search fundamental — hemat token & lebih akurat
-  const hasFMP = p.fmp_found === true;
-  const fmpCtx = hasFMP
-    ? 'Data Fundamental REAL dari FMP (SUDAH AKURAT, JANGAN CARI LAGI):\n' +
-      'EPS TTM: '       + (p.eps_ttm        ?? 'N/A') + ' Rp/saham\n' +
-      'Book Value: '    + (p.book_value      ?? 'N/A') + ' Rp/saham\n' +
-      'ROE: '           + (p.roe_ttm         ?? 'N/A') + '%\n' +
-      'ROA: '           + (p.roa_ttm         ?? 'N/A') + '%\n' +
-      'Net Margin: '    + (p.net_margin      ?? 'N/A') + '%\n' +
-      'DER: '           + (p.debt_to_equity  ?? 'N/A') + '\n' +
-      'Current Ratio: ' + (p.current_ratio   ?? 'N/A') + '\n' +
-      'Beta: '          + (p.beta_fmp        ?? 'N/A') + '\n' +
-      'DPS FMP: '       + (p.dps_fmp         ?? 'N/A') + ' Rp\n'
-    : '';
-
-  const searchLine = hasFMP
-    ? 'Search HANYA untuk bandarmologi: "' + ticker + ' foreign net buy sell IDX asing 2025"\n\n'
-    : 'Search IDX data for ' + ticker + '.JK:\n' +
-      '1. "' + ticker + ' EPS book value ROE laporan keuangan 2024 2025"\n' +
-      '2. "' + ticker + ' foreign net buy sell IDX asing 2025"\n\n';
-
   const prompt =
-    searchLine +
+    'Search IDX data for ' + ticker + '.JK:\n' +
+    '1. "' + ticker + ' EPS book value ROE laporan keuangan 2024 2025"\n' +
+    '2. "' + ticker + ' foreign net buy sell IDX asing 2025"\n\n' +
     'Data REAL Yahoo Finance:\n' +
     'Harga: Rp ' + p.price + ' | Chg: ' + p.change_pct + '% | Vol: ' + (p.volume/1e6).toFixed(1) + 'M | Avg30D: ' + ((p.avg_volume||0)/1e6).toFixed(1) + 'M\n' +
     '52W: Rp ' + p.week52_low + '-' + p.week52_high + ' | Pos52W: ' + pos52 + ' | RSIaprx: ' + rsiEst + '\n' +
     'Historis REAL: ' + sessStr + '\n' +
     (dpsLine ? dpsLine + '\n' : '') +
-    (fmpCtx ? fmpCtx : '') +
-    '\nPENTING: EPS dan Book Value dalam Rupiah PER SAHAM (bukan miliar).\n' +
+    `\nData Fundamental Yahoo Finance (REAL):\nEPS: ${p.eps_ttm||'N/A'} | BV: ${p.book_value||'N/A'} | ROE: ${p.roe_ttm||'N/A'}%\n` +
+    '\nPENTING: Cari data TERBARU 2024-2025. EPS dan Book Value dalam Rupiah PER SAHAM (bukan miliar).\n' +
     'JANGAN hitung PER/PBV sendiri — saya akan hitung dari harga real di atas.\n' +
-    (hasFMP ? '' : 'Contoh BBCA: EPS ~466, Book Value ~2280, ROE ~23%, DPS ~200.\n') +
-    '\n' +
+    'Contoh BBCA: EPS ~466, Book Value ~2280, ROE ~23%, DPS ~200.\n\n' +
     'Return ONLY valid JSON, no markdown:\n' +
     '{"f":{"eps_ttm":null,"eps_growth_rate":null,"book_value_per_share":null,"dps":' + dpsVal + ',"dividend_yield":null,"roe":null,"roa":null,"net_margin":null,"debt_to_equity":null,"current_ratio":null,"pe_ratio":null,"pb_ratio":null,"beta":null,"cost_of_equity":null},' +
     '"bm":{"ff_30d":null,"ff_trend":"neutral","foreign_own_pct":null,"bb":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"bs":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"broker_real":false,"buyer_type":"unknown","score":50,"phase":"neutral","wyckoff":null,"wyckoff_desc":null,"inst_sig":"neutral","unusual_vol":false,"unusual_desc":null,"pv_div":false,"div_type":"none","vwap":"at_vwap","adl":"neutral","vol_trend":"stable","confidence":"low","summary":""},' +
@@ -492,20 +453,12 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
   Object.keys(f).forEach(k => { f[k] = nn(f[k]); });
   if (dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
   if (!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5 + f.beta*5.5).toFixed(2)) : 11.0;
-  // Override dengan data REAL FMP jika tersedia — prioritas lebih tinggi dari Gemini
-  if (p.fmp_found) {
-    if (p.eps_ttm        != null) f.eps_ttm              = parseFloat(p.eps_ttm);
-    if (p.book_value     != null) f.book_value_per_share = parseFloat(p.book_value);
-    if (p.roe_ttm        != null) f.roe                  = parseFloat(p.roe_ttm);
-    if (p.roa_ttm        != null) f.roa                  = parseFloat(p.roa_ttm);
-    if (p.net_margin     != null) f.net_margin           = parseFloat(p.net_margin);
-    if (p.debt_to_equity != null) f.debt_to_equity       = parseFloat(p.debt_to_equity);
-    if (p.current_ratio  != null) f.current_ratio        = parseFloat(p.current_ratio);
-    if (p.beta_fmp       != null) f.beta                 = parseFloat(p.beta_fmp);
-    if (p.eps_growth_rate!= null) f.eps_growth_rate      = parseFloat(p.eps_growth_rate);
-    // DPS: prioritas Yahoo chart > FMP > Gemini
-    if (p.dps_fmp != null && !dpsFromChart) f.dps = parseFloat(p.dps_fmp);
-  }
+  // Override dengan data REAL Yahoo Finance jika tersedia (mencegah halusinasi Gemini)
+  if (p.eps_ttm) f.eps_ttm = parseFloat(p.eps_ttm);
+  if (p.book_value) f.book_value_per_share = parseFloat(p.book_value);
+  if (p.roe_ttm) f.roe = parseFloat(p.roe_ttm);
+  if (p.dividend_yield && !f.dps) f.dividend_yield = parseFloat(p.dividend_yield);
+  // 👆 ───────────────────────────────────────────────────────────────────────── 👆
 
   // SELALU hitung ulang PER & PBV dari harga REAL Yahoo Finance
   // Jangan pakai nilai dari Claude — bisa pakai harga lama dari training data
@@ -613,7 +566,7 @@ async function runAnalysis(){
   setStep(0);
   try{
     // CALL 1: Harga real dari Yahoo Finance chart (no Claude)
-    setTxt('Mengambil harga real-time...','Yahoo Finance · '+ticker+'.JK · no AI');
+    setTxt('Mengambil harga real-time...','Yahoo Finance (Harga + Fundamental) · '+ticker+'.JK');
     setStep(0);
     const P=await fetchPrice(ticker);
 

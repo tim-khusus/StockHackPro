@@ -372,7 +372,10 @@ async function fetchPrice(ticker) {
   try {
     const [priceRes, fundRes] = await Promise.all([
       fetch(`/api/price?ticker=${ticker}`),
-      fetch(`/api/fundamental?ticker=${ticker}`).catch(() => null) 
+      fetch(`/api/fundamental?ticker=${ticker}`).catch(err => {
+        console.error("Gagal menghubungi /api/fundamental:", err);
+        return null;
+      }) 
     ]);
 
     if (!priceRes.ok) throw new Error(`HTTP ${priceRes.status}`);
@@ -380,10 +383,15 @@ async function fetchPrice(ticker) {
     if (!d.found) throw new Error('Data saham tidak ditemukan');
 
     let fData = {};
-    if (fundRes && fundRes.ok) {
-      fData = await fundRes.json();
+    if (fundRes) {
+      if (fundRes.ok) {
+        fData = await fundRes.json();
+        console.log("✅ Data FMP Berhasil Ditarik:", fData); // <- Indikator Sukses
+      } else {
+        const errText = await fundRes.text();
+        console.error("❌ Error dari fundamental.js:", fundRes.status, errText); // <- Indikator Error Vercel
+      }
     }
-
     return {
       ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
       open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,

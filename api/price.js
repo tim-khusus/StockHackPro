@@ -115,32 +115,34 @@ export default async function handler(req, res) {
         const qsJson = await qsRes.json();
         const fd  = qsJson?.quoteSummary?.result?.[0]?.financialData      || {};
         const ks  = qsJson?.quoteSummary?.result?.[0]?.defaultKeyStatistics || {};
-        const n   = (v) => { const x = parseFloat(v); return isNaN(x) || !isFinite(x) ? null : x; };
-        const pct = (v) => { const x = n(v); return x === null ? null : parseFloat((Math.abs(x) > 1 ? x : x * 100).toFixed(2)); };
+        
+        // 👇 PERBAIKAN: Mengambil angka dari properti ".raw" milik Yahoo
+        const getVal = (obj) => (obj && obj.raw !== undefined) ? obj.raw : null;
+        const pct = (obj) => { 
+          const v = getVal(obj); 
+          return v !== null ? parseFloat((Math.abs(v) > 1 ? v : v * 100).toFixed(2)) : null; 
+        };
 
-        // EPS — Yahoo simpan trailingEps dalam mata uang lokal (Rupiah untuk .JK)
-        const eps_ttm = n(ks.trailingEps);
+        // EPS — Mengambil dari Trailing (TTM) atau Forward EPS
+        const eps_ttm = getVal(ks.trailingEps) || getVal(ks.forwardEps);
 
         // Book Value per share
-        const book_value = n(ks.bookValue);
+        const book_value = getVal(ks.bookValue);
 
-        // ROE — Yahoo kirim sebagai desimal (0.17 = 17%)
+        // ROE & ROA — Yahoo mengirim format desimal, otomatis diubah ke persen oleh pct()
         const roe_ttm = pct(fd.returnOnEquity);
-
-        // ROA
         const roa_ttm = pct(fd.returnOnAssets);
 
-        // Net margin — desimal → persen
+        // Net margin
         const net_margin = pct(fd.profitMargins);
 
-        // Debt to Equity — Yahoo sudah dalam rasio biasa
-        const debt_to_equity = n(fd.debtToEquity);
+        // Debt to Equity — Yahoo mengirim persen (misal: 19.58), kita ubah ke rasio (0.19x)
+        const raw_debt = getVal(fd.debtToEquity);
+        const debt_to_equity = raw_debt !== null ? parseFloat((raw_debt / 100).toFixed(2)) : null;
 
-        // Current Ratio
-        const current_ratio = n(fd.currentRatio);
-
-        // Beta
-        const beta = n(ks.beta);
+        // Current Ratio & Beta
+        const current_ratio = getVal(fd.currentRatio) !== null ? parseFloat(getVal(fd.currentRatio).toFixed(2)) : null;
+        const beta = getVal(ks.beta);
 
         // EPS growth (trailing)
         const eps_growth_rate = pct(ks.earningsQuarterlyGrowth ?? fd.earningsGrowth);
@@ -161,7 +163,7 @@ export default async function handler(req, res) {
     } catch (fsErr) {
       console.warn('[price.js] quoteSummary failed (non-fatal):', fsErr.message);
     }
-
+    
     // ── 5. Harga live dari meta ─────────────────────────────────
     const price     = meta.regularMarketPrice || meta.previousClose || 0;
     const prevClose = meta.previousClose || (closes.length > 1 ? closes[closes.length-2] : 0) || 0;

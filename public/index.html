@@ -1041,6 +1041,118 @@ function loadHistory(i){
   document.getElementById('tickerInput').value=h.ticker;
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+// 👇 KODE BARU: Interceptor & Logika Portofolio Pribadi 👇
+const _originalRenderResult = renderResult;
+
+// Timpa fungsi asli untuk menyuntikkan widget portofolio
+renderResult = function(ticker, P, F, FV, BM, A) {
+  // 1. Eksekusi render asli terlebih dahulu
+  _originalRenderResult(ticker, P, F, FV, BM, A);
+  
+  // 2. Jalankan evaluasi portofolio lokal
+  evaluateMyPortfolio(P, A);
+};
+
+function evaluateMyPortfolio(P, A) {
+  const avgInput = document.getElementById('myAvgPrice').value;
+  const lotInput = document.getElementById('myLotSize').value;
+
+  // Lewati jika user tidak mengisi form portofolio
+  if (!avgInput || !lotInput) return; 
+
+  const avgPrice = parseFloat(avgInput);
+  const lots = parseFloat(lotInput);
+  if (isNaN(avgPrice) || isNaN(lots) || avgPrice <= 0 || lots <= 0) return;
+
+  // Kalkulasi Floating Profit / Loss
+  const currentPrice = P.price;
+  const shares = lots * 100;
+  const totalModal = avgPrice * shares;
+  const totalEquity = currentPrice * shares;
+  const floatRp = totalEquity - totalModal;
+  const floatPct = (floatRp / totalModal) * 100;
+
+  // Ekstrak angka Target Harga & Stop Loss dari AI (menghapus "Rp" dll)
+  const tpClean = A.target_harga ? parseFloat(A.target_harga.replace(/[^0-9]/g, '')) : currentPrice * 1.1;
+  const slClean = A.stop_loss ? parseFloat(A.stop_loss.replace(/[^0-9]/g, '')) : currentPrice * 0.9;
+
+  let customVerdict = 'HOLD';
+  let customReason = '';
+  let vColor = 'var(--hold)';
+  let borderColor = 'rgba(255, 179, 0, 0.4)';
+
+  // LOGIKA KEPUTUSAN PERSONAL
+  if (currentPrice <= slClean) {
+    customVerdict = 'CUT LOSS';
+    customReason = `Harga saat ini (Rp ${fmt(currentPrice)}) sudah menyentuh batas Stop Loss (Rp ${fmt(slClean)}). Segera batasi kerugian Anda untuk mengamankan sisa modal.`;
+    vColor = 'var(--sell)';
+    borderColor = 'rgba(255, 69, 96, 0.5)';
+  } else if (currentPrice >= tpClean) {
+    customVerdict = 'TAKE PROFIT';
+    customReason = `Selamat! Harga saat ini (Rp ${fmt(currentPrice)}) sudah mencapai/melewati Target AI (Rp ${fmt(tpClean)}). Waktunya merealisasikan keuntungan Anda.`;
+    vColor = 'var(--buy)';
+    borderColor = 'rgba(0, 230, 118, 0.5)';
+  } else if (floatPct <= -5 && A.keputusan === 'BUY') {
+    customVerdict = 'AVERAGE DOWN';
+    customReason = `Posisi Anda sedang Floating Loss ${floatPct.toFixed(1)}%, namun AI melihat momentum BUY. Ini kesempatan baik untuk menurunkan Harga Rata-rata (Avg) jika Anda memiliki dana cadangan.`;
+    vColor = 'var(--buy)';
+    borderColor = 'rgba(0, 230, 118, 0.5)';
+  } else if (floatPct >= 7 && A.keputusan === 'SELL') {
+    customVerdict = 'TAKE PROFIT / TRAILING STOP';
+    customReason = `Anda sudah profit ${floatPct.toFixed(1)}%, namun AI mendeteksi sinyal SELL/Distribusi. Amankan profit Anda sebagian atau pasang Trailing Stop ketat.`;
+    vColor = 'var(--sell)';
+    borderColor = 'rgba(255, 69, 96, 0.5)';
+  } else {
+    customVerdict = A.keputusan;
+    customReason = `Posisi terpantau aman. Ikuti arahan utama AI: ${A.keputusan}. Jangan lupa pantau pergerakan sentimen dan bandarmologi.`;
+    if(A.keputusan === 'BUY') { vColor = 'var(--buy)'; borderColor = 'rgba(0, 230, 118, 0.5)'; }
+    if(A.keputusan === 'SELL') { vColor = 'var(--sell)'; borderColor = 'rgba(255, 69, 96, 0.5)'; }
+  }
+
+  const floatColor = floatRp >= 0 ? 'var(--buy)' : 'var(--sell)';
+
+  const widgetHTML = `
+  <div class="my-portfolio-card" style="border-color:${borderColor}">
+    <div class="my-pf-title" style="color:${vColor}">// Analisa Portofolio Pribadi: ${ticker}</div>
+    
+    <div class="my-pf-grid">
+      <div>
+        <div class="my-pf-label">Avg Price</div>
+        <div class="my-pf-val" style="color:var(--text)">Rp ${fmt(avgPrice)}</div>
+      </div>
+      <div>
+        <div class="my-pf-label">Floating P/L</div>
+        <div class="my-pf-val" style="color:${floatColor}">
+          ${floatRp >= 0 ? '+' : ''}${fmt(floatRp)}<br>
+          <span style="font-size:12px">(${floatPct >= 0 ? '+' : ''}${floatPct.toFixed(2)}%)</span>
+        </div>
+      </div>
+      <div>
+        <div class="my-pf-label">Total Equity</div>
+        <div class="my-pf-val" style="color:var(--text)">Rp ${fmt(totalEquity)}</div>
+      </div>
+    </div>
+
+    <div class="my-pf-verdict-box" style="border-left-color:${vColor}">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:800; color:${vColor}; margin-bottom:6px; letter-spacing:1px;">
+        ▸ ACTION: ${customVerdict}
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); line-height:1.6;">
+        ${customReason}
+      </div>
+    </div>
+  </div>`;
+
+  // Sisipkan widget ini tepat di bawah div metrics-grid
+  setTimeout(() => {
+    const resultDiv = document.getElementById('result');
+    const metricsGrid = resultDiv.querySelector('.metrics-grid');
+    if (metricsGrid) {
+      metricsGrid.insertAdjacentHTML('afterend', widgetHTML);
+    }
+  }, 50); // Delay kecil memastikan DOM asli sudah terender
+}
 </script>
 </body>
 </html>

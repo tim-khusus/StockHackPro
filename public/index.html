@@ -338,6 +338,7 @@ async function fetchPrice(ticker){
     sector: d.sector, industry: d.industry,
     sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
     dps_from_chart: d.dps_from_chart || null,
+    last_updated: d.last_updated
   };
 }
 
@@ -810,6 +811,16 @@ function renderResult(ticker,P,F,FV,BM,A){
   const p52H=P.week52_high?((P.price-P.week52_high)/P.week52_high*100).toFixed(1):null;
   const p52L=P.week52_low?((P.price-P.week52_low)/P.week52_low*100).toFixed(1):null;
 
+  let timeWIB = 'N/A';
+  if (P.last_updated) {
+    const dateObj = new Date(P.last_updated * 1000);
+    timeWIB = dateObj.toLocaleTimeString('id-ID', { 
+      timeZone: 'Asia/Jakarta', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }) + ' WIB';
+  }
+
   // Fair value HTML
   let fvHTML='';
   if(FV){
@@ -895,6 +906,10 @@ function renderResult(ticker,P,F,FV,BM,A){
       <div class="price-now">Rp ${fmt(P.price)}</div>
       <div class="price-change ${cd}">${cs}${fmt(P.change)} (${cs}${P.change_pct}%)</div>
       <div class="price-meta">H:${fmt(P.high)} L:${fmt(P.low)} · Vol:${P.volume?fmtM(P.volume):'N/A'}${P.avg_volume?' · Avg:'+fmtM(P.avg_volume):''}</div>
+
+      <div class="price-meta" style="width: 100%; color: var(--hold); margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Waktu Harga: ${timeWIB} (Delay Data ±15 Menit)</div>
     </div>
   </div>
 

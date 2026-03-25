@@ -140,7 +140,6 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 .bandar-score-title{font-size:15px;font-weight:700;margin-bottom:3px;}
 .bandar-score-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.55;}
 
-/* Wyckoff phase indicator */
 .wyckoff-bar{display:flex;gap:3px;margin-bottom:16px;flex-wrap:wrap;}
 .wyckoff-phase{flex:1;min-width:60px;text-align:center;padding:7px 4px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border:1px solid var(--border);color:var(--muted);cursor:default;}
 .wyckoff-phase.active{font-weight:700;}
@@ -157,7 +156,6 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 .bsc-value{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;line-height:1;margin-bottom:4px;}
 .bsc-interp{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
 
-/* Volume chart */
 .vol-chart{margin-bottom:16px;}
 .vol-chart-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;}
 .vol-bars{display:flex;align-items:flex-end;gap:5px;height:64px;padding-bottom:2px;}
@@ -167,7 +165,6 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 .vol-chart-labels{display:flex;gap:5px;margin-top:4px;}
 .vol-chart-label{flex:1;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-align:center;overflow:hidden;text-overflow:ellipsis;}
 
-/* Foreign flow bar */
 .ff-bar-wrap{margin-bottom:16px;}
 .ff-bar-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden;position:relative;margin:6px 0;}
 .ff-bar-fill{height:100%;border-radius:4px;transition:width 1.2s ease;}
@@ -179,8 +176,6 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 .alert-foreign{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25);color:var(--accent);}
 
 .bandar-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:#8ab8d4;line-height:1.7;padding:13px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--orange);}
-
-/* Data source note */
 .data-src-note{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--border);margin-top:10px;letter-spacing:1px;}
 
 .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
@@ -225,6 +220,7 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 .disclaimer{background:rgba(255,179,0,.05);border:1px solid rgba(255,179,0,.2);border-radius:10px;padding:13px 16px;font-size:12px;color:rgba(255,179,0,.7);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:24px;}
 .error-card{background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.3);border-radius:12px;padding:22px;color:var(--sell);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;}
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
 .my-portfolio-card { background: var(--surface2); border: 1.5px dashed; border-radius: 12px; padding: 20px; margin-bottom: 18px; position: relative; overflow: hidden; }
 .my-pf-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
 .my-pf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -277,7 +273,7 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
     <div class="loading-text" id="loadingText">Memulai analisa...</div>
     <div class="loading-sub" id="loadingSub">Mengambil data dari internet</div>
     <div class="loading-steps">
-      <div class="loading-step" id="step1">▸ [1/2] Harga + Fundamental — Yahoo Finance (tanpa AI)</div>
+      <div class="loading-step" id="step1">▸ [1/2] Harga real-time — Yahoo Finance (tanpa AI)</div>
       <div class="loading-step" id="step2">▸ ────────────────────────────────────────────────</div>
       <div class="loading-step" id="step3">▸ [2/2] Gemini AI — Fundamental · Bandarmologi · Rekomendasi</div>
       <div class="loading-step" id="step4">▸ Kalkulasi harga wajar + render hasil...</div>
@@ -299,7 +295,6 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 </div>
 
 <script>
-// API request dikirim ke serverless proxy Vercel — Gemini API key tersembunyi di server
 const API = "/api/analyze";
 let analysisHistory = [];
 
@@ -318,7 +313,6 @@ function setTxt(t,s=''){
   document.getElementById('loadingSub').textContent=s;
 }
 
-
 async function callGemini(prompt, useSearch=false, maxTok=8192){
   const body={
     model: 'gemini-2.5-flash',
@@ -334,117 +328,108 @@ async function callGemini(prompt, useSearch=false, maxTok=8192){
 }
 
 function parseJSON(text){
-  // 1. Bersihkan markdown code fence
-  let clean = text
-    .replace(/^```[a-z]*\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim();
-    
-  // 2. Ambil dari { pertama sampai } terakhir
+  let clean = text.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
   const start = clean.indexOf('{');
   const end   = clean.lastIndexOf('}');
-  if(start === -1 || end === -1 || end <= start)
-    throw new Error('Format respons tidak valid — tidak ditemukan JSON');
-    
+  if(start === -1 || end === -1 || end <= start) throw new Error('Format respons tidak valid — tidak ditemukan JSON');
+  
   let jsonStr = clean.slice(start, end + 1);
-  
-  // 👇 AUTO-FIX: Mencegah error Parse gagal 👇
-  // A. Hapus koma berlebih di akhir array/object (trailing commas)
-  jsonStr = jsonStr.replace(/,\s*([\}\]])/g, '$1');
-  
-  // B. Hapus karakter Enter (newline) atau Tab tak kasat mata di dalam string
-  // Mengubah semua enter menjadi spasi agar JSON.parse tidak tersedak
+  jsonStr = jsonStr.replace(/,\s*([\}\]])/g, '$1'); 
   jsonStr = jsonStr.replace(/[\u0000-\u001F]+/g, ' '); 
-
   try { 
     return JSON.parse(jsonStr); 
   } catch(e) { 
-    console.error("AI JSON Output:", jsonStr); // Membantu debug di console browser
+    console.error("AI JSON Output:", jsonStr);
     throw new Error('AI menghasilkan teks yang tidak wajar. Silakan klik Analisa ulang.'); 
   }
 }
+
 // ══════════════════════════════════════
-// CALL 1 — Harga + Fundamental REAL
-// Langsung fetch dari Yahoo Finance via /api/price (bukan tanya Claude)
+// CALL 1 — Mengambil Seluruh Data dari price.js
 // ══════════════════════════════════════
-// Ambil harga REAL dari /api/price (Yahoo Finance chart v8)
 async function fetchPrice(ticker) {
-  const r = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const d = await r.json();
-  if (!d.found) throw new Error(`${ticker} tidak ditemukan. ${d.reason||''}`);
+  try {
+    const response = await fetch(`/api/price?ticker=${ticker}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const d = await response.json();
+    if (!d.found) throw new Error('Data saham tidak ditemukan');
 
-  // Fundamental dari Yahoo quoteSummary (sudah digabung di price.js)
-  const F = d.fundamental || {};
-  const hasFundamental = F.found === true;
+    return {
+      ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
+      open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
+      prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
+      sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
+      dps_from_chart: d.dps_from_chart || null,
+      last_updated: d.last_updated,
+      company_name: d.company_name,
+      sector: d.sector,
+      industry: d.industry,
+      
+      // Data Teknikal Asli (Matematis)
+      rsi_14: d.rsi_14,
+      ma_20: d.ma_20,
+      ma_50: d.ma_50,
+      support_30d: d.support_30d,
+      resist_30d: d.resist_30d,
+      trend_ma: d.trend_ma,
+      momentum_rsi: d.momentum_rsi,
 
-  return {
-    ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
-    open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
-    prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
-    sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
-    dps_from_chart: d.dps_from_chart || null,
-    last_updated: d.last_updated,
-    company_name: d.company_name,
-    sector: d.sector,
-    industry: d.industry,
-    // Fundamental dari Yahoo Finance quoteSummary
-    fmp_found:       hasFundamental,
-    eps_ttm:         F.eps_ttm         ?? null,
-    book_value:      F.book_value      ?? null,
-    roe_ttm:         F.roe_ttm         ?? null,
-    roa_ttm:         F.roa_ttm         ?? null,
-    net_margin:      F.net_margin      ?? null,
-    debt_to_equity:  F.debt_to_equity  ?? null,
-    current_ratio:   F.current_ratio   ?? null,
-    beta_fmp:        F.beta            ?? null,
-    eps_growth_rate: F.eps_growth_rate ?? null,
-    dps_fmp:         null,
-    dividend_yield:  null,
-    pe_ratio_ttm:    null,
-    pb_ratio_ttm:    null,
-  };
+      // Data Fundamental
+      eps_ttm: d.eps_ttm || null,
+      pe_ratio_ttm: d.pe_ratio_ttm || null,
+      pb_ratio_ttm: d.pb_ratio_ttm || null,
+      roe_ttm: d.roe_ttm || null,
+      book_value: d.book_value || null,
+      dividend_yield: d.dividend_yield || null
+    };
+  } catch(e) {
+    throw e;
+  }
 }
 
 // ═══════════════════════════════════════════════════════
-// CALL 2 — Gemini AI Analysis
+// CALL 2 — Gemini AI (Dengan Prompt Fakta Teknikal)
 // ═══════════════════════════════════════════════════════
 async function fetchAllAnalysis(ticker, p, dpsFromChart){
-  const pos52 = (p.week52_high && p.week52_low)
-    ? (((p.price - p.week52_low) / (p.week52_high - p.week52_low)) * 100).toFixed(0) + '%'
-    : 'N/A';
-  const rsiEst = (p.week52_high && p.week52_low)
-    ? Math.round(30 + (((p.price - p.week52_low) / (p.week52_high - p.week52_low)) * 50))
-    : 50;
   const sessStr = (p.sessions || []).slice(0, 10).map(s =>
     s.session + '(' + s.date + '):v=' + (s.vol/1e6).toFixed(1) + 'M,p=' + s.price + ',c=' + s.change_pct + '%'
   ).join(' ');
   const dpsLine = dpsFromChart ? 'DPS real dari chart: Rp ' + dpsFromChart : '';
   const dpsVal  = dpsFromChart ? dpsFromChart : 'null';
 
-  // STRUKTUR PROMPT BARU: Instruksi di atas, JSON murni di bawah!
+  // Menyusun Template JSON agar AI tidak berhalusinasi teknikalnya
+  const techSupport = p.support_30d || p.week52_low;
+  const techResist = p.resist_30d || p.week52_high;
+  const techRSI = p.rsi_14 ? `${p.rsi_14} (${p.momentum_rsi||''})` : '';
+
   const prompt =
     'Search IDX data for ' + ticker + '.JK:\n' +
     '1. "' + ticker + ' EPS book value ROE laporan keuangan 2024 2025"\n' +
     '2. "' + ticker + ' foreign net buy sell IDX asing 2025"\n\n' +
     'Data REAL Yahoo Finance:\n' +
     'Harga: Rp ' + p.price + ' | Chg: ' + p.change_pct + '% | Vol: ' + (p.volume/1e6).toFixed(1) + 'M | Avg30D: ' + ((p.avg_volume||0)/1e6).toFixed(1) + 'M\n' +
-    '52W: Rp ' + p.week52_low + '-' + p.week52_high + ' | Pos52W: ' + pos52 + ' | RSIaprx: ' + rsiEst + '\n' +
+    '52W: Rp ' + p.week52_low + '-' + p.week52_high + '\n' +
     'Historis REAL: ' + sessStr + '\n' +
     (dpsLine ? dpsLine + '\n' : '') +
-    `\nData Fundamental (REAL TTM):\nEPS: ${p.eps_ttm||'N/A'} | BV: ${p.book_value||'N/A'} | ROE: ${p.roe_ttm||'N/A'}%\n` +
-    '\nINSTRUKSI PENTING UNTUK AI:\n' +
-    '1. Cari data TERBARU 2024-2025 di internet.\n' +
-    '2. Isi semua parameter "null" di template JSON bawah ini dengan hasil pencarian.\n' +
+    `\nData TEKNIKAL REAL (Perhitungan Matematis):\n` +
+    `RSI (14 Hari): ${p.rsi_14||'N/A'} - ${p.momentum_rsi||'N/A'}\n` +
+    `MA20: Rp ${p.ma_20||'N/A'} | MA50: Rp ${p.ma_50||'N/A'}\n` +
+    `Trend MA: ${p.trend_ma||'N/A'}\n` +
+    `Support Terdekat (30D): Rp ${p.support_30d||'N/A'} | Resistance Terdekat (30D): Rp ${p.resist_30d||'N/A'}\n\n` +
+    `Data FUNDAMENTAL (REAL TTM):\nEPS: ${p.eps_ttm||'N/A'} | BV: ${p.book_value||'N/A'} | ROE: ${p.roe_ttm||'N/A'}%\n\n` +
+    'INSTRUKSI PENTING UNTUK AI:\n' +
+    '1. Cari sentimen & data laporan keuangan terbaru di internet.\n' +
+    '2. Data Teknikal dan Fundamental REAL di atas WAJIB Anda masukkan ke dalam JSON, DILARANG MENGARANG.\n' +
     '3. JANGAN hitung pe_ratio dan pb_ratio sendiri (biarkan null).\n' +
-    '4. OUTPUT WAJIB BERUPA JSON LENGKAP DARI AWAL { SAMPAI AKHIR }. DILARANG TERPOTONG!\n' +
+    '4. OUTPUT WAJIB JSON LENGKAP DARI KODE AWAL { SAMPAI AKHIR }. DILARANG TERPOTONG!\n' +
     '5. Dilarang memakai tanda kutip ganda (") di dalam teks analisa/katalis, gunakan kutip tunggal (\').\n\n' +
     'FORMAT OUTPUT (Wajib Copy & Lengkapi JSON ini sepenuhnya):\n' +
     '```json\n' +
     '{\n' +
     '  "f": {"eps_ttm":null,"eps_growth_rate":null,"book_value_per_share":null,"dps":' + dpsVal + ',"dividend_yield":null,"roe":null,"roa":null,"net_margin":null,"debt_to_equity":null,"current_ratio":null,"pe_ratio":null,"pb_ratio":null,"beta":null,"cost_of_equity":null},\n' +
     '  "bm": {"ff_30d":null,"ff_trend":"neutral","foreign_own_pct":null,"bb":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"bs":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"broker_real":false,"buyer_type":"unknown","score":50,"phase":"neutral","wyckoff":null,"wyckoff_desc":null,"inst_sig":"neutral","unusual_vol":false,"unusual_desc":null,"pv_div":false,"div_type":"none","vwap":"at_vwap","adl":"neutral","vol_trend":"stable","confidence":"low","summary":""},\n' +
-    '  "a": {"keputusan":"HOLD","area_entry":"Rentang beli ideal (misal: Rp 800 - Rp 820)","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"","Posisi 52W":"","Momentum":"","Volume":"","Support":"Rp ' + p.week52_low + '","Resistance":"Rp ' + p.week52_high + '","Tren":""},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}\n' +
+    '  "a": {"keputusan":"HOLD","area_entry":"Rentang beli ideal (misal: Rp 800 - Rp 820)","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"' + techRSI + '","Posisi 52W":"","Momentum":"' + (p.momentum_rsi||'') + '","Volume":"","Support":"Rp ' + techSupport + '","Resistance":"Rp ' + techResist + '","Tren":"' + (p.trend_ma||'') + '"},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}\n' +
     '}\n' +
     '```';
   
@@ -458,13 +443,13 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
   if (dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
   if (!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5 + f.beta*5.5).toFixed(2)) : 11.0;
   
-  // Paksa gunakan data fundamental akurat dari Yahoo Finance API jika tersedia
+  // Timpa paksa dengan data fundamental REAL Yahoo
   if (p.eps_ttm) f.eps_ttm = parseFloat(p.eps_ttm);
   if (p.book_value) f.book_value_per_share = parseFloat(p.book_value);
   if (p.roe_ttm) f.roe = parseFloat(p.roe_ttm);
   if (p.dividend_yield && !f.dps) f.dividend_yield = parseFloat(p.dividend_yield);
 
-  // Kalkulasi ulang PER & PBV
+  // Kalkulasi PER & PBV
   if (f.eps_ttm > 0)              f.pe_ratio  = parseFloat((p.price / f.eps_ttm).toFixed(2));
   if (f.book_value_per_share > 0) f.pb_ratio  = parseFloat((p.price / f.book_value_per_share).toFixed(2));
   if (f.dps > 0)                  f.dividend_yield = parseFloat((f.dps / p.price * 100).toFixed(2));
@@ -557,8 +542,7 @@ function calcBandarSignals(p, bm){
   return {...bm, obvTrend, volRatio, volTrend5d, pvSignal, score, verdict, foreignStrength, accumCount, distribCount};
 }
 
-// MAIN — 3 lean API calls, ~7K token each
-// ══════════════════════════════════════
+// MAIN EXECUTION
 async function runAnalysis(){
   const ticker=document.getElementById('tickerInput').value.trim().toUpperCase();
   if(!ticker||ticker.length<2){alert('Masukkan kode saham valid');return;}
@@ -568,17 +552,14 @@ async function runAnalysis(){
   document.getElementById('result').style.display='none';
   setStep(0);
   try{
-    // CALL 1: Harga real dari Yahoo Finance chart (no Claude)
-    setTxt('Mengambil harga real-time...','Yahoo Finance (Harga + Fundamental) · '+ticker+'.JK');
+    setTxt('Mengambil harga & fundamental...','Yahoo Finance API · '+ticker+'.JK');
     setStep(0);
     const P=await fetchPrice(ticker);
 
-    // CALL 2: Fundamental + Bandarmologi + Analisa — 1 Claude call saja
-    setTxt('Analisa AI...','Fundamental · Bandarmologi · Rekomendasi · Gemini 2.5 Flash');
+    setTxt('Analisa AI...','Teknikal · Bandarmologi · Rekomendasi · Gemini 2.5 Flash');
     setStep(2);
     const {f:F, bm:bmRaw, a:A}=await fetchAllAnalysis(ticker,P,P.dps_from_chart);
 
-    // Pure JS — tidak pakai token
     setStep(3);
     const FV=calcFairValue(P,F);
     const BM=calcBandarSignals(P,bmRaw);
@@ -594,27 +575,20 @@ async function runAnalysis(){
   }
 }
 
-
-// ══════════════════════════════════════
 // HELPERS
-// ══════════════════════════════════════
 function fmt(n){
   if(n==null||n===''||n===undefined)return '-';
   const num=Number(n);
   if(isNaN(num))return String(n);
   return num.toLocaleString('id');
 }
-// Safe number: always returns a float or null — never throws .toFixed errors
 function toN(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
 function fmtM(n){return n!=null?(n/1e6).toFixed(1)+'M':'-';}
 function upsideCol(n){return n>15?'var(--buy)':n<-15?'var(--sell)':'var(--hold)';}
 
-// ══════════════════════════════════════
 // RENDER BANDARMOLOGY
-// ══════════════════════════════════════
 function buildBandarHTML(p, bm){
   if(!bm) return `<div class="bandar-section" style="opacity:.6;"><div class="bandar-title">◉ Bandarmologi — Data Tidak Tersedia</div></div>`;
-
   const score   = bm.score || 50;
   const verdict = bm.verdict || 'netral';
   const vClass  = verdict==='akumulasi'?'b-akkum':verdict==='distribusi'?'b-distr':'b-netral';
@@ -622,23 +596,19 @@ function buildBandarHTML(p, bm){
   const sCol    = score>=65?'var(--buy)':score<=35?'var(--sell)':'var(--hold)';
   const sBorder = score>=65?'rgba(0,230,118,.5)':score<=35?'rgba(255,69,96,.5)':'rgba(255,179,0,.5)';
 
-  // Wyckoff phases
   const phases       = ['accumulation_phase_1','accumulation_phase_2','markup','distribution','markdown','neutral'];
   const phaseLabels  = ['AKUM.1','AKUM.2','MARKUP','DISTR.','MARKDN','NETRAL'];
   const phaseClasses = ['wp-acc1','wp-acc2','wp-markup','wp-distr','wp-markdown','wp-neutral'];
   const wyckoffBar   = phases.map((ph,i)=>`<div class="wyckoff-phase ${phaseClasses[i]}${bm.bandar_phase===ph?' active':''}">${phaseLabels[i]}</div>`).join('');
 
-  // OBV
   const obvCol = bm.obvTrend==='rising'?'var(--buy)':bm.obvTrend==='falling'?'var(--sell)':'var(--hold)';
   const obvLbl = bm.obvTrend==='rising'?'↑ NAIK — Akumulasi':bm.obvTrend==='falling'?'↓ TURUN — Distribusi':'→ SIDEWAYS';
 
-  // Foreign flow
   const ffCol  = bm.foreign_flow_trend==='net_buy'?'var(--buy)':bm.foreign_flow_trend==='net_sell'?'var(--sell)':'var(--muted)';
   const ffLbl  = bm.foreign_flow_trend==='net_buy'?'NET BUY ↑':bm.foreign_flow_trend==='net_sell'?'NET SELL ↓':'NETRAL';
   const ff30   = bm.foreign_net_buy_30d;
   const ffPct  = ff30!=null ? Math.min(100,Math.max(0,50+(ff30>0?Math.min(40,ff30/8):Math.max(-40,ff30/8)))) : 50;
 
-  // Volume bars (price-colored)
   const sessions = bm.vol_sessions || [];
   const maxV = sessions.length ? Math.max(...sessions.map(s=>s.vol||0), 1) : 1;
   const avgVol = bm.avg_vol_30d || p.avg_volume || maxV;
@@ -675,7 +645,6 @@ function buildBandarHTML(p, bm){
     ${bm.candle_volume_pattern?`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--purple);margin-top:6px;padding:6px 10px;background:rgba(167,139,250,.07);border-radius:5px;border-left:2px solid var(--purple);">📊 ${bm.candle_volume_pattern}</div>`:''}
   </div>` : '';
 
-  // Foreign flow bar
   const ffBarHTML = `
   <div class="ff-bar-wrap">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px;">
@@ -702,65 +671,17 @@ function buildBandarHTML(p, bm){
     </div>
   </div>`;
 
-  // ── BROKER TABLE ──────────────────────────────
   let brokerHTML = '';
   const hasBroker = (bm.top_broker_buy?.length || bm.top_broker_sell?.length);
   if(hasBroker){
-    const buyRows  = (bm.top_broker_buy||[]).slice(0,5).map(b=>`
-      <tr>
-        <td style="color:var(--buy);font-weight:700;">${b.broker||'-'}</td>
-        <td style="color:var(--text);">${b.name||'-'}</td>
-        <td style="color:var(--buy);text-align:right;">${b.net_buy_lot?fmt(b.net_buy_lot)+' lot':'-'}</td>
-        <td style="color:var(--buy);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td>
-      </tr>`).join('');
-    const sellRows = (bm.top_broker_sell||[]).slice(0,5).map(b=>`
-      <tr>
-        <td style="color:var(--sell);font-weight:700;">${b.broker||'-'}</td>
-        <td style="color:var(--text);">${b.name||'-'}</td>
-        <td style="color:var(--sell);text-align:right;">${b.net_sell_lot?fmt(b.net_sell_lot)+' lot':'-'}</td>
-        <td style="color:var(--sell);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td>
-      </tr>`).join('');
+    const buyRows  = (bm.top_broker_buy||[]).slice(0,5).map(b=>`<tr><td style="color:var(--buy);font-weight:700;">${b.broker||'-'}</td><td style="color:var(--text);">${b.name||'-'}</td><td style="color:var(--buy);text-align:right;">${b.net_buy_lot?fmt(b.net_buy_lot)+' lot':'-'}</td><td style="color:var(--buy);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td></tr>`).join('');
+    const sellRows = (bm.top_broker_sell||[]).slice(0,5).map(b=>`<tr><td style="color:var(--sell);font-weight:700;">${b.broker||'-'}</td><td style="color:var(--text);">${b.name||'-'}</td><td style="color:var(--sell);text-align:right;">${b.net_sell_lot?fmt(b.net_sell_lot)+' lot':'-'}</td><td style="color:var(--sell);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td></tr>`).join('');
     const tStyle = `width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;`;
     const thStyle = `font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:5px 6px;border-bottom:1px solid var(--border);text-align:left;`;
-    const tdStyle = `padding:5px 6px;border-bottom:1px solid rgba(26,48,69,.4);`;
-    const dataNote = bm.broker_data_available
-      ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">
-          Pembeli dominan: <span style="color:var(--buy)">${bm.dominant_buyer_type||'N/A'}</span> &nbsp;·&nbsp;
-          Penjual dominan: <span style="color:var(--sell)">${bm.dominant_seller_type||'N/A'}</span>
-         </div>`
-      : `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--border);margin-top:5px;">★ Data broker adalah estimasi — untuk data real gunakan RTI Business / Stockbit Pro</div>`;
-    brokerHTML = `
-    <div style="margin-bottom:16px;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">
-        Ringkasan Broker ${bm.broker_data_available?'':'(Estimasi)'}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--buy);letter-spacing:1px;margin-bottom:6px;">▲ TOP NET BUYER</div>
-          <table style="${tStyle}">
-            <thead><tr>
-              <th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th>
-              <th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th>
-            </tr></thead>
-            <tbody style="color:var(--text);">${buyRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody>
-          </table>
-        </div>
-        <div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sell);letter-spacing:1px;margin-bottom:6px;">▼ TOP NET SELLER</div>
-          <table style="${tStyle}">
-            <thead><tr>
-              <th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th>
-              <th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th>
-            </tr></thead>
-            <tbody style="color:var(--text);">${sellRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody>
-          </table>
-        </div>
-      </div>
-      ${dataNote}
-    </div>`;
+    const dataNote = bm.broker_data_available ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">Pembeli dominan: <span style="color:var(--buy)">${bm.dominant_buyer_type||'N/A'}</span> &nbsp;·&nbsp; Penjual dominan: <span style="color:var(--sell)">${bm.dominant_seller_type||'N/A'}</span></div>` : `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--border);margin-top:5px;">★ Data broker adalah estimasi — untuk data real gunakan RTI Business / Stockbit Pro</div>`;
+    brokerHTML = `<div style="margin-bottom:16px;"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Ringkasan Broker ${bm.broker_data_available?'':'(Estimasi)'}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--buy);letter-spacing:1px;margin-bottom:6px;">▲ TOP NET BUYER</div><table style="${tStyle}"><thead><tr><th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th><th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th></tr></thead><tbody style="color:var(--text);">${buyRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody></table></div><div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sell);letter-spacing:1px;margin-bottom:6px;">▼ TOP NET SELLER</div><table style="${tStyle}"><thead><tr><th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th><th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th></tr></thead><tbody style="color:var(--text);">${sellRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody></table></div></div>${dataNote}</div>`;
   }
 
-  // Alert boxes
   const alerts = [];
   if(bm.unusual_vol_detected) alerts.push(`<div class="alert-box alert-anomaly">🔔 VOLUME ANOMALI: ${bm.unusual_vol_desc||'Volume tidak biasa terdeteksi'}</div>`);
   if(bm.price_vol_divergence && bm.divergence_type && bm.divergence_type!=='none') alerts.push(`<div class="alert-box alert-divergence">⚡ DIVERGENSI ${bm.divergence_type==='bullish_divergence'?'BULLISH — Harga turun tapi OBV naik (potensi reversal naik)':'BEARISH — Harga naik tapi OBV turun (potensi reversal turun)'}</div>`);
@@ -768,31 +689,13 @@ function buildBandarHTML(p, bm){
   if(bm.foreign_flow_trend==='net_buy' && (ff30||0)>50) alerts.push(`<div class="alert-box alert-foreign">🌐 FOREIGN BUYING: Asing akumulasi kuat — Net buy Rp ${fmt(ff30)}M (30D)${bm.foreign_ownership_pct?' · Kepemilikan: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%':''}</div>`);
   if(bm.foreign_flow_trend==='net_sell' && (ff30||0)<-50) alerts.push(`<div class="alert-box" style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.3);color:var(--sell);">⚠ FOREIGN SELLING: Asing distribusi kuat — Net sell Rp ${fmt(Math.abs(ff30))}M (30D)</div>`);
 
-  // PV Signal labels
-  const pvLabels = {
-    'bullish_confirmation':'✓ Volume Konfirmasi Bullish',
-    'bearish_confirmation':'✗ Volume Konfirmasi Bearish',
-    'weak_rally':'↑ Rally Tanpa Volume (Lemah)',
-    'weak_decline':'↓ Koreksi Tanpa Volume (Normal)'
-  };
+  const pvLabels = {'bullish_confirmation':'✓ Volume Konfirmasi Bullish','bearish_confirmation':'✗ Volume Konfirmasi Bearish','weak_rally':'↑ Rally Tanpa Volume (Lemah)','weak_decline':'↓ Koreksi Tanpa Volume (Normal)'};
 
-  // A/D count bar
   const totalSig = bm.accumCount + bm.distribCount;
   const accumPct = totalSig > 0 ? (bm.accumCount/totalSig*100).toFixed(0) : 50;
-  const adBar = totalSig > 0 ? `
-  <div style="margin-bottom:14px;">
-    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;">
-      <span>Session Distribusi (${bm.distribCount})</span>
-      <span style="color:var(--accent);">Akumulasi vs Distribusi (10 sesi)</span>
-      <span>Session Akumulasi (${bm.accumCount})</span>
-    </div>
-    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
-      <div style="height:100%;background:linear-gradient(90deg,var(--sell) 0%,var(--sell) ${100-accumPct}%,var(--buy) ${100-accumPct}%,var(--buy) 100%);border-radius:3px;"></div>
-    </div>
-  </div>` : '';
+  const adBar = totalSig > 0 ? `<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;"><span>Session Distribusi (${bm.distribCount})</span><span style="color:var(--accent);">Akumulasi vs Distribusi (10 sesi)</span><span>Session Akumulasi (${bm.accumCount})</span></div><div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,var(--sell) 0%,var(--sell) ${100-accumPct}%,var(--buy) ${100-accumPct}%,var(--buy) 100%);border-radius:3px;"></div></div></div>` : '';
 
-  const srcNote = bm.data_sources_used?.length
-    ? `<div class="data-src-note">Sumber data: ${bm.data_sources_used.join(' · ')} · Kepercayaan data: <span style="color:${bm.data_confidence==='high'?'var(--buy)':bm.data_confidence==='medium'?'var(--hold)':'var(--sell)'}"> ${(bm.data_confidence||'low').toUpperCase()}</span></div>` : '';
+  const srcNote = bm.data_sources_used?.length ? `<div class="data-src-note">Sumber data: ${bm.data_sources_used.join(' · ')} · Kepercayaan data: <span style="color:${bm.data_confidence==='high'?'var(--buy)':bm.data_confidence==='medium'?'var(--hold)':'var(--sell)'}"> ${(bm.data_confidence||'low').toUpperCase()}</span></div>` : '';
 
   return `
   <div class="bandar-section">
@@ -803,78 +706,27 @@ function buildBandarHTML(p, bm){
       </div>
       <div class="bandar-verdict-pill ${vClass}">${vLbl}</div>
     </div>
-
     <div class="bandar-score-wrap">
-      <div class="bandar-score-circle" style="border-color:${sBorder};">
-        <div class="bandar-score-num" style="color:${sCol}">${score}</div>
-        <div class="bandar-score-lbl">/100</div>
-      </div>
-      <div class="bandar-score-desc">
-        <div class="bandar-score-title" style="color:${sCol}">${vLbl}</div>
-        <div class="bandar-score-sub">
-          OBV: <span style="color:${obvCol}">${obvLbl}</span><br>
-          A/D Line: <span style="color:${bm.accumulation_distribution_line==='positive'?'var(--buy)':bm.accumulation_distribution_line==='negative'?'var(--sell)':'var(--muted)'}">
-            ${bm.accumulation_distribution_line==='positive'?'↑ Akumulasi':bm.accumulation_distribution_line==='negative'?'↓ Distribusi':'→ Netral'}</span><br>
-          ${score>=65?'Big player sedang akumulasi posisi. Pantau untuk entry.':score<=35?'Big player melepas posisi. Waspadai tekanan jual.':'Belum ada sinyal jelas. Monitor terus.'}
-        </div>
-      </div>
+      <div class="bandar-score-circle" style="border-color:${sBorder};"><div class="bandar-score-num" style="color:${sCol}">${score}</div><div class="bandar-score-lbl">/100</div></div>
+      <div class="bandar-score-desc"><div class="bandar-score-title" style="color:${sCol}">${vLbl}</div><div class="bandar-score-sub">OBV: <span style="color:${obvCol}">${obvLbl}</span><br>A/D Line: <span style="color:${bm.accumulation_distribution_line==='positive'?'var(--buy)':bm.accumulation_distribution_line==='negative'?'var(--sell)':'var(--muted)'}">${bm.accumulation_distribution_line==='positive'?'↑ Akumulasi':bm.accumulation_distribution_line==='negative'?'↓ Distribusi':'→ Netral'}</span><br>${score>=65?'Big player sedang akumulasi posisi. Pantau untuk entry.':score<=35?'Big player melepas posisi. Waspadai tekanan jual.':'Belum ada sinyal jelas. Monitor terus.'}</div></div>
     </div>
-
-    <div style="margin-bottom:12px;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;">
-        Fase Wyckoff${bm.wyckoff_event?' · Event terdeteksi: <span style="color:var(--purple)">'+bm.wyckoff_event+'</span>':''}
-      </div>
-      <div class="wyckoff-bar">${wyckoffBar}</div>
-    </div>
-
+    <div style="margin-bottom:12px;"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;">Fase Wyckoff${bm.wyckoff_event?' · Event terdeteksi: <span style="color:var(--purple)">'+bm.wyckoff_event+'</span>':''}</div><div class="wyckoff-bar">${wyckoffBar}</div></div>
     ${alerts.join('')}
-
     <div class="bandar-signals-grid">
-      <div class="bsc">
-        <div class="bsc-label">Vol Ratio Hari Ini</div>
-        <div class="bsc-value" style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--text)'}">${toN(bm.volRatio)?.toFixed(2)||'-'}x</div>
-        <div class="bsc-interp">${bm.volRatio>=2?'⚡ Sangat tinggi':bm.volRatio>=1.5?'Tinggi sekali':bm.volRatio>=1.2?'Diatas rata-rata':bm.volRatio<0.6?'Sangat sepi':'Normal'}</div>
-      </div>
-      <div class="bsc">
-        <div class="bsc-label">OBV Trend</div>
-        <div class="bsc-value" style="color:${obvCol};font-size:12px;">${(bm.obvTrend||'N/A').toUpperCase()}</div>
-        <div class="bsc-interp" style="color:${obvCol}">${obvLbl}</div>
-      </div>
-      <div class="bsc">
-        <div class="bsc-label">Price-Volume Signal</div>
-        <div class="bsc-value" style="font-size:11px;color:var(--text)">${pvLabels[bm.pvSignal]||bm.pvSignal||'-'}</div>
-        <div class="bsc-interp">Konfirmasi tren & kekuatan</div>
-      </div>
-      <div class="bsc">
-        <div class="bsc-label">Foreign Flow</div>
-        <div class="bsc-value" style="color:${ffCol};font-size:13px;">${ffLbl}</div>
-        <div class="bsc-interp" style="color:${ffCol}">${bm.foreignStrength||''} · ${bm.foreign_net_buy_today!=null?'Hari ini: '+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+'M':'Kepemilikan: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%'}</div>
-      </div>
-      <div class="bsc">
-        <div class="bsc-label">VWAP</div>
-        <div class="bsc-value" style="color:${bm.vwap_relation==='above_vwap'?'var(--buy)':bm.vwap_relation==='below_vwap'?'var(--sell)':'var(--muted)'};font-size:11px;">${(bm.vwap_relation||'N/A').replace(/_/g,' ').toUpperCase()}</div>
-        <div class="bsc-interp">${bm.vwap_relation==='above_vwap'?'Bullish intraday':bm.vwap_relation==='below_vwap'?'Bearish intraday':'Dekat VWAP'}</div>
-      </div>
-      <div class="bsc">
-        <div class="bsc-label">Institutional Signal</div>
-        <div class="bsc-value" style="color:${bm.institutional_signal==='accumulation'?'var(--buy)':bm.institutional_signal==='distribution'?'var(--sell)':'var(--muted)'};font-size:12px;">${(bm.institutional_signal||'neutral').toUpperCase()}</div>
-        <div class="bsc-interp">${bm.big_block_trades_today!=null?bm.big_block_trades_today+' block trade hari ini':'Vol 10D: '+(bm.vol_trend_10d||'N/A')}</div>
-      </div>
+      <div class="bsc"><div class="bsc-label">Vol Ratio Hari Ini</div><div class="bsc-value" style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--text)'}">${toN(bm.volRatio)?.toFixed(2)||'-'}x</div><div class="bsc-interp">${bm.volRatio>=2?'⚡ Sangat tinggi':bm.volRatio>=1.5?'Tinggi sekali':bm.volRatio>=1.2?'Diatas rata-rata':bm.volRatio<0.6?'Sangat sepi':'Normal'}</div></div>
+      <div class="bsc"><div class="bsc-label">OBV Trend</div><div class="bsc-value" style="color:${obvCol};font-size:12px;">${(bm.obvTrend||'N/A').toUpperCase()}</div><div class="bsc-interp" style="color:${obvCol}">${obvLbl}</div></div>
+      <div class="bsc"><div class="bsc-label">Price-Volume Signal</div><div class="bsc-value" style="font-size:11px;color:var(--text)">${pvLabels[bm.pvSignal]||bm.pvSignal||'-'}</div><div class="bsc-interp">Konfirmasi tren & kekuatan</div></div>
+      <div class="bsc"><div class="bsc-label">Foreign Flow</div><div class="bsc-value" style="color:${ffCol};font-size:13px;">${ffLbl}</div><div class="bsc-interp" style="color:${ffCol}">${bm.foreignStrength||''} · ${bm.foreign_net_buy_today!=null?'Hari ini: '+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+'M':'Kepemilikan: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%'}</div></div>
+      <div class="bsc"><div class="bsc-label">VWAP</div><div class="bsc-value" style="color:${bm.vwap_relation==='above_vwap'?'var(--buy)':bm.vwap_relation==='below_vwap'?'var(--sell)':'var(--muted)'};font-size:11px;">${(bm.vwap_relation||'N/A').replace(/_/g,' ').toUpperCase()}</div><div class="bsc-interp">${bm.vwap_relation==='above_vwap'?'Bullish intraday':bm.vwap_relation==='below_vwap'?'Bearish intraday':'Dekat VWAP'}</div></div>
+      <div class="bsc"><div class="bsc-label">Institutional Signal</div><div class="bsc-value" style="color:${bm.institutional_signal==='accumulation'?'var(--buy)':bm.institutional_signal==='distribution'?'var(--sell)':'var(--muted)'};font-size:12px;">${(bm.institutional_signal||'neutral').toUpperCase()}</div><div class="bsc-interp">${bm.big_block_trades_today!=null?bm.big_block_trades_today+' block trade hari ini':'Vol 10D: '+(bm.vol_trend_10d||'N/A')}</div></div>
     </div>
-
-    ${adBar}
-    ${ffBarHTML}
-    ${brokerHTML}
-    ${volBarsHTML}
-
+    ${adBar}${ffBarHTML}${brokerHTML}${volBarsHTML}
     <div class="bandar-text">${bm.bandar_summary||'Interpretasi bandarmologi tidak tersedia.'}</div>
     ${srcNote}
   </div>`;
 }
 
-// ══════════════════════════════════════
 // RENDER MAIN RESULT
-// ══════════════════════════════════════
 function renderResult(ticker,P,F,FV,BM,A){
   const vc=A.keputusan==='BUY'?'buy':A.keputusan==='SELL'?'sell':'hold';
   const vi=A.keputusan==='BUY'?'↑':A.keputusan==='SELL'?'↓':'→';
@@ -889,14 +741,9 @@ function renderResult(ticker,P,F,FV,BM,A){
   let timeWIB = 'N/A';
   if (P.last_updated) {
     const dateObj = new Date(P.last_updated * 1000);
-    timeWIB = dateObj.toLocaleTimeString('id-ID', { 
-      timeZone: 'Asia/Jakarta', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }) + ' WIB';
+    timeWIB = dateObj.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }) + ' WIB';
   }
 
-  // Fair value HTML
   let fvHTML='';
   if(FV){
     const up=parseFloat(FV.upside);
@@ -919,10 +766,7 @@ function renderResult(ticker,P,F,FV,BM,A){
     fvHTML=`
     <div class="fairvalue-section">
       <div class="fv-header">
-        <div>
-          <div class="fv-title">⬡ Harga Wajar — ${FV.count} Metode Valuasi Fundamental</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;">Data real: EPS, Book Value, ROE, Dividen</div>
-        </div>
+        <div><div class="fv-title">⬡ Harga Wajar — ${FV.count} Metode Valuasi Fundamental</div><div style="font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;">Data real: EPS, Book Value, ROE, Dividen</div></div>
         <div class="fv-verdict-label ${stCls}">${stLbl}</div>
       </div>
       <div style="text-align:center;margin-bottom:16px;">
@@ -935,10 +779,7 @@ function renderResult(ticker,P,F,FV,BM,A){
       </div>
       <div class="fv-gauge-wrap">
         <div class="fv-gauge-labels"><span>SANGAT MURAH</span><span>WAJAR</span><span>SANGAT MAHAL</span></div>
-        <div class="fv-gauge-track" style="position:relative;">
-          <div class="fv-gauge-price-label" id="gLbl" style="left:5%">Rp ${fmt(P.price)}</div>
-          <div class="fv-gauge-marker" id="gMark" style="left:5%"></div>
-        </div>
+        <div class="fv-gauge-track" style="position:relative;"><div class="fv-gauge-price-label" id="gLbl" style="left:5%">Rp ${fmt(P.price)}</div><div class="fv-gauge-marker" id="gMark" style="left:5%"></div></div>
         <div style="height:12px;"></div>
       </div>
       <div class="fv-methods-grid">${mCards}</div>
@@ -953,11 +794,10 @@ function renderResult(ticker,P,F,FV,BM,A){
     fvHTML=`<div class="fairvalue-section" style="opacity:.65;"><div class="fv-title" style="margin-bottom:10px;">⬡ Harga Wajar — Data Fundamental Tidak Cukup</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);">Data EPS/Book Value tidak tersedia. Coba saham blue chip (BBCA, BBRI, TLKM, ASII).</div></div>`;
   }
 
-const safeAreaEntry = (A.area_entry && A.area_entry !== '-' && String(A.area_entry).trim() !== '') 
-    ? A.area_entry 
-    : 'Menunggu konfirmasi support';
+  const safeAreaEntry = (A.area_entry && A.area_entry !== '-' && String(A.area_entry).trim() !== '') 
+      ? A.area_entry 
+      : 'Menunggu konfirmasi support';
 
-  // Render kotak Area Entry HANYA jika keputusannya BUY atau HOLD
   const showEntryBox = (A.keputusan === 'BUY' || A.keputusan === 'HOLD');
   const entryBoxHTML = showEntryBox ? `
     <div style="background: rgba(0, 230, 118, 0.05); border: 1px dashed var(--buy); padding: 14px; border-radius: 12px; margin-bottom: 18px;">
@@ -969,7 +809,7 @@ const safeAreaEntry = (A.area_entry && A.area_entry !== '-' && String(A.area_ent
       </div>
     </div>
   ` : '';
-  
+
   const html=`
   <div class="badge-row">
     <span class="badge badge-green">✓ HARGA REAL · Yahoo Finance</span>
@@ -998,14 +838,13 @@ const safeAreaEntry = (A.area_entry && A.area_entry !== '-' && String(A.area_ent
       <div class="price-now">Rp ${fmt(P.price)}</div>
       <div class="price-change ${cd}">${cs}${fmt(P.change)} (${cs}${P.change_pct}%)</div>
       <div class="price-meta">H:${fmt(P.high)} L:${fmt(P.low)} · Vol:${P.volume?fmtM(P.volume):'N/A'}${P.avg_volume?' · Avg:'+fmtM(P.avg_volume):''}</div>
-
       <div class="price-meta" style="width: 100%; color: var(--hold); margin-top: 2px; display: flex; align-items: center; gap: 4px;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         Waktu Harga: ${timeWIB} (Delay Data ±15 Menit)</div>
     </div>
   </div>
 
-${entryBoxHTML}
+  ${entryBoxHTML}
   <div class="metrics-grid">
     <div class="metric-card"><div class="metric-label">Target Harga</div><div class="metric-value positive">${A.target_harga}</div></div>
     <div class="metric-card"><div class="metric-label">Stop Loss</div><div class="metric-value negative">${A.stop_loss}</div></div>
@@ -1017,7 +856,6 @@ ${entryBoxHTML}
   </div>
 
   ${fvHTML}
-
   ${buildBandarHTML(P,BM)}
 
   <div class="risk-section">
@@ -1032,7 +870,7 @@ ${entryBoxHTML}
 
   <div class="analysis-grid">
     <div class="analysis-card">
-      <div class="card-title">// Indikator Teknikal</div>
+      <div class="card-title">// Indikator Teknikal REAL (Matematis)</div>
       ${Object.entries(A.teknikal||{}).map(([k,v])=>`<div class="ind-row"><span class="ind-n">${k}</span><span class="ind-v">${v}</span></div>`).join('')}
     </div>
     <div class="analysis-card">
@@ -1071,22 +909,15 @@ ${entryBoxHTML}
       const gl=document.getElementById('gLbl');if(gl)gl.style.left=gp+'%';
       const mf=document.getElementById('mosFill');if(mf)mf.style.width=Math.min(100,Math.max(0,parseFloat(FV.mos)))+'%';
     }
-    // Foreign flow bar animate
     if(BM){
       const ff30 = BM.foreign_net_buy_30d;
       const ffEl = document.getElementById('ffBar');
       if(ffEl && ff30 != null){
         const pct = Math.min(40, Math.abs(ff30/8));
-        if(ff30 >= 0){
-          ffEl.style.marginLeft = '50%';
-          ffEl.style.width = pct+'%';
-        } else {
-          ffEl.style.marginLeft = (50-pct)+'%';
-          ffEl.style.width = pct+'%';
-        }
+        if(ff30 >= 0){ ffEl.style.marginLeft = '50%'; ffEl.style.width = pct+'%'; } 
+        else { ffEl.style.marginLeft = (50-pct)+'%'; ffEl.style.width = pct+'%'; }
       }
     }
-    // Volume bars animate
     document.querySelectorAll('.vb[data-h]').forEach((b,i)=>{
       const h=b.getAttribute('data-h');
       if(h) setTimeout(()=>{b.style.height=h+'%';},50*i);
@@ -1121,15 +952,10 @@ function loadHistory(i){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// 👇 KODE BARU: Interceptor & Logika Portofolio Pribadi 👇
+// ── Widget Portofolio Pribadi ──
 const _originalRenderResult = renderResult;
-
-// Timpa fungsi asli untuk menyuntikkan widget portofolio
 renderResult = function(ticker, P, F, FV, BM, A) {
-  // 1. Eksekusi render asli terlebih dahulu
   _originalRenderResult(ticker, P, F, FV, BM, A);
-  
-  // 2. Jalankan evaluasi portofolio lokal
   evaluateMyPortfolio(ticker, P, A);
 };
 
@@ -1137,14 +963,12 @@ function evaluateMyPortfolio(ticker, P, A) {
   const avgInput = document.getElementById('myAvgPrice').value;
   const lotInput = document.getElementById('myLotSize').value;
 
-  // Lewati jika user tidak mengisi form portofolio
   if (!avgInput || !lotInput) return; 
 
   const avgPrice = parseFloat(avgInput);
   const lots = parseFloat(lotInput);
   if (isNaN(avgPrice) || isNaN(lots) || avgPrice <= 0 || lots <= 0) return;
 
-  // Kalkulasi Floating Profit / Loss
   const currentPrice = P.price;
   const shares = lots * 100;
   const totalModal = avgPrice * shares;
@@ -1152,7 +976,6 @@ function evaluateMyPortfolio(ticker, P, A) {
   const floatRp = totalEquity - totalModal;
   const floatPct = (floatRp / totalModal) * 100;
 
-  // Ekstrak angka Target Harga & Stop Loss dari AI (menghapus "Rp" dll)
   const tpClean = A.target_harga ? parseFloat(A.target_harga.replace(/[^0-9]/g, '')) : currentPrice * 1.1;
   const slClean = A.stop_loss ? parseFloat(A.stop_loss.replace(/[^0-9]/g, '')) : currentPrice * 0.9;
 
@@ -1161,27 +984,22 @@ function evaluateMyPortfolio(ticker, P, A) {
   let vColor = 'var(--hold)';
   let borderColor = 'rgba(255, 179, 0, 0.4)';
 
-  // LOGIKA KEPUTUSAN PERSONAL
   if (currentPrice <= slClean) {
     customVerdict = 'CUT LOSS';
     customReason = `Harga saat ini (Rp ${fmt(currentPrice)}) sudah menyentuh batas Stop Loss (Rp ${fmt(slClean)}). Segera batasi kerugian Anda untuk mengamankan sisa modal.`;
-    vColor = 'var(--sell)';
-    borderColor = 'rgba(255, 69, 96, 0.5)';
+    vColor = 'var(--sell)'; borderColor = 'rgba(255, 69, 96, 0.5)';
   } else if (currentPrice >= tpClean) {
     customVerdict = 'TAKE PROFIT';
     customReason = `Selamat! Harga saat ini (Rp ${fmt(currentPrice)}) sudah mencapai/melewati Target AI (Rp ${fmt(tpClean)}). Waktunya merealisasikan keuntungan Anda.`;
-    vColor = 'var(--buy)';
-    borderColor = 'rgba(0, 230, 118, 0.5)';
+    vColor = 'var(--buy)'; borderColor = 'rgba(0, 230, 118, 0.5)';
   } else if (floatPct <= -5 && A.keputusan === 'BUY') {
     customVerdict = 'AVERAGE DOWN';
     customReason = `Posisi Anda sedang Floating Loss ${floatPct.toFixed(1)}%, namun AI melihat momentum BUY. Ini kesempatan baik untuk menurunkan Harga Rata-rata (Avg) jika Anda memiliki dana cadangan.`;
-    vColor = 'var(--buy)';
-    borderColor = 'rgba(0, 230, 118, 0.5)';
+    vColor = 'var(--buy)'; borderColor = 'rgba(0, 230, 118, 0.5)';
   } else if (floatPct >= 7 && A.keputusan === 'SELL') {
     customVerdict = 'TAKE PROFIT / TRAILING STOP';
     customReason = `Anda sudah profit ${floatPct.toFixed(1)}%, namun AI mendeteksi sinyal SELL/Distribusi. Amankan profit Anda sebagian atau pasang Trailing Stop ketat.`;
-    vColor = 'var(--sell)';
-    borderColor = 'rgba(255, 69, 96, 0.5)';
+    vColor = 'var(--sell)'; borderColor = 'rgba(255, 69, 96, 0.5)';
   } else {
     customVerdict = A.keputusan;
     customReason = `Posisi terpantau aman. Ikuti arahan utama AI: ${A.keputusan}. Jangan lupa pantau pergerakan sentimen dan bandarmologi.`;
@@ -1194,43 +1012,22 @@ function evaluateMyPortfolio(ticker, P, A) {
   const widgetHTML = `
   <div class="my-portfolio-card" style="border-color:${borderColor}">
     <div class="my-pf-title" style="color:${vColor}">// Analisa Portofolio Pribadi: ${ticker}</div>
-    
     <div class="my-pf-grid">
-      <div>
-        <div class="my-pf-label">Avg Price</div>
-        <div class="my-pf-val" style="color:var(--text)">Rp ${fmt(avgPrice)}</div>
-      </div>
-      <div>
-        <div class="my-pf-label">Floating P/L</div>
-        <div class="my-pf-val" style="color:${floatColor}">
-          ${floatRp >= 0 ? '+' : ''}${fmt(floatRp)}<br>
-          <span style="font-size:12px">(${floatPct >= 0 ? '+' : ''}${floatPct.toFixed(2)}%)</span>
-        </div>
-      </div>
-      <div>
-        <div class="my-pf-label">Total Equity</div>
-        <div class="my-pf-val" style="color:var(--text)">Rp ${fmt(totalEquity)}</div>
-      </div>
+      <div><div class="my-pf-label">Avg Price</div><div class="my-pf-val" style="color:var(--text)">Rp ${fmt(avgPrice)}</div></div>
+      <div><div class="my-pf-label">Floating P/L</div><div class="my-pf-val" style="color:${floatColor}">${floatRp >= 0 ? '+' : ''}${fmt(floatRp)}<br><span style="font-size:12px">(${floatPct >= 0 ? '+' : ''}${floatPct.toFixed(2)}%)</span></div></div>
+      <div><div class="my-pf-label">Total Equity</div><div class="my-pf-val" style="color:var(--text)">Rp ${fmt(totalEquity)}</div></div>
     </div>
-
     <div class="my-pf-verdict-box" style="border-left-color:${vColor}">
-      <div style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:800; color:${vColor}; margin-bottom:6px; letter-spacing:1px;">
-        ▸ ACTION: ${customVerdict}
-      </div>
-      <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); line-height:1.6;">
-        ${customReason}
-      </div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:800; color:${vColor}; margin-bottom:6px; letter-spacing:1px;">▸ ACTION: ${customVerdict}</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); line-height:1.6;">${customReason}</div>
     </div>
   </div>`;
 
-  // Sisipkan widget ini tepat di bawah div metrics-grid
   setTimeout(() => {
     const resultDiv = document.getElementById('result');
     const metricsGrid = resultDiv.querySelector('.metrics-grid');
-    if (metricsGrid) {
-      metricsGrid.insertAdjacentHTML('afterend', widgetHTML);
-    }
-  }, 50); // Delay kecil memastikan DOM asli sudah terender
+    if (metricsGrid) metricsGrid.insertAdjacentHTML('afterend', widgetHTML);
+  }, 50); 
 }
 </script>
 </body>

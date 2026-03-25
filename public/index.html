@@ -405,11 +405,7 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
     '"a":{"keputusan":"HOLD","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"","Posisi 52W":"","Momentum":"","Volume":"","Support":"Rp ' + p.week52_low + '","Resistance":"Rp ' + p.week52_high + '","Tren":""},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}}' +
     '\nIsi semua null dengan data TERBARU. Untuk f: cukup isi eps_ttm, book_value_per_share, roe, roa, net_margin, debt_to_equity, current_ratio, beta, eps_growth_rate, dps. JANGAN isi pe_ratio dan pb_ratio.';
 
-  const txt = await callGemini(prompt, true, 2048);
-  // DEBUG SEMENTARA — hapus setelah masalah solved
-  console.log('=== RAW GEMINI RESPONSE ===');
-  console.log(txt);
-  console.log('=== END RAW RESPONSE ===');
+  const txt = await callGemini(prompt, true, 8192);
   const d = parseJSON(txt);
   if (!d.f || !d.bm || !d.a) throw new Error('Respons tidak lengkap, coba lagi');
 

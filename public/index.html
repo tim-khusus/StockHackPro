@@ -356,38 +356,38 @@ function parseJSON(text){
 // Ambil harga REAL dari /api/price (Yahoo Finance chart v8)
 async function fetchPrice(ticker) {
   try {
-    // Menjalankan fetch Harga (Yahoo) dan Fundamental (FMP) secara paralel agar lebih cepat
     const [priceRes, fundRes] = await Promise.all([
       fetch(`/api/price?ticker=${ticker}`),
-      fetch(`/api/fundamental?ticker=${ticker}`).catch(() => null) // Ignore error jika FMP gagal
+      fetch(`/api/fundamental?ticker=${ticker}`).catch(() => null) 
     ]);
 
     if (!priceRes.ok) throw new Error(`HTTP ${priceRes.status}`);
     const d = await priceRes.json();
-    if (!d.found) throw new Error('Data saham tidak ditemukan (mungkin delisted/IPO baru)');
+    if (!d.found) throw new Error('Data saham tidak ditemukan');
 
-    let fundamentalData = {};
+    let fData = {};
     if (fundRes && fundRes.ok) {
-      fundamentalData = await fundRes.json();
+      fData = await fundRes.json();
     }
-  return {
-    ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
-    open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
-    prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
-    sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
-    dps_from_chart: d.dps_from_chart || null,
-    last_updated: d.last_updated
 
-// Data dari FMP (Fundamental Update)
-      company_name: fundamentalData.company_name || d.company_name,
-      sector: fundamentalData.sector || d.sector,
-      industry: fundamentalData.industry || d.industry,
-      market_cap: fundamentalData.market_cap || null,
-      eps_ttm: fundamentalData.eps_ttm || null,
-      pe_ratio_ttm: fundamentalData.pe_ratio_ttm || null,
-      pb_ratio_ttm: fundamentalData.pb_ratio_ttm || null,
-      roe_ttm: fundamentalData.roe_ttm || null,
-      dividend_yield: fundamentalData.dividend_yield_ttm || null
+    return {
+      ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
+      open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
+      prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
+      sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
+      dps_from_chart: d.dps_from_chart || null,
+      last_updated: d.last_updated,
+      company_name: d.company_name,
+      sector: d.sector,
+      industry: d.industry,
+      
+      // 👇 Data Injeksi FMP 👇
+      eps_ttm: fData.eps_ttm || null,
+      pe_ratio_ttm: fData.pe_ratio_ttm || null,
+      pb_ratio_ttm: fData.pb_ratio_ttm || null,
+      roe_ttm: fData.roe_ttm || null,
+      book_value: fData.book_value || null,
+      dividend_yield: fData.dividend_yield || null
     };
   } catch(e) {
     throw e;
@@ -420,6 +420,7 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
     '52W: Rp ' + p.week52_low + '-' + p.week52_high + ' | Pos52W: ' + pos52 + ' | RSIaprx: ' + rsiEst + '\n' +
     'Historis REAL: ' + sessStr + '\n' +
     (dpsLine ? dpsLine + '\n' : '') +
+    `\nData Fundamental FMP (REAL TTM):\nEPS: ${p.eps_ttm||'N/A'} | BV: ${p.book_value||'N/A'} | ROE: ${p.roe_ttm||'N/A'}%\n` +
     '\nPENTING: Cari data TERBARU 2024-2025. EPS dan Book Value dalam Rupiah PER SAHAM (bukan miliar).\n' +
     'JANGAN hitung PER/PBV sendiri — saya akan hitung dari harga real di atas.\n' +
     'Contoh BBCA: EPS ~466, Book Value ~2280, ROE ~23%, DPS ~200.\n\n' +
@@ -439,6 +440,12 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
   Object.keys(f).forEach(k => { f[k] = nn(f[k]); });
   if (dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
   if (!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5 + f.beta*5.5).toFixed(2)) : 11.0;
+  // 👇 KODE BARU: Paksa gunakan data akurat FMP jika tersedia (Mencegah AI Halusinasi) 👇
+  if (p.eps_ttm) f.eps_ttm = parseFloat(p.eps_ttm);
+  if (p.book_value) f.book_value_per_share = parseFloat(p.book_value);
+  if (p.roe_ttm) f.roe = parseFloat(p.roe_ttm);
+  if (p.dividend_yield && !f.dps) f.dividend_yield = parseFloat(p.dividend_yield);
+  // 👆 ───────────────────────────────────────────────────────────────────────── 👆
 
   // SELALU hitung ulang PER & PBV dari harga REAL Yahoo Finance
   // Jangan pakai nilai dari Claude — bisa pakai harga lama dari training data

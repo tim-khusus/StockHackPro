@@ -225,6 +225,12 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 .disclaimer{background:rgba(255,179,0,.05);border:1px solid rgba(255,179,0,.2);border-radius:10px;padding:13px 16px;font-size:12px;color:rgba(255,179,0,.7);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:24px;}
 .error-card{background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.3);border-radius:12px;padding:22px;color:var(--sell);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;}
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.my-portfolio-card { background: var(--surface2); border: 1.5px dashed; border-radius: 12px; padding: 20px; margin-bottom: 18px; position: relative; overflow: hidden; }
+.my-pf-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
+.my-pf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.my-pf-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.my-pf-val { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; }
+.my-pf-verdict-box { background: var(--surface); padding: 14px; border-radius: 8px; border-left: 4px solid; }
 </style>
 </head>
 <body>
@@ -256,8 +262,16 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
       <span class="quick-tag" onclick="quickPick('UNVR')">UNVR</span>
       <span class="quick-tag" onclick="quickPick('BRIS')">BRIS</span>
     </div>
+    <div class="portfolio-inputs" style="margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
+      <div class="search-label" style="color:var(--accent2);">// Data Portofolio Anda (Opsional)</div>
+      <div style="display:flex; gap:12px; align-items:stretch; flex-wrap:wrap;">
+        <input class="search-input" id="myAvgPrice" type="number" placeholder="Harga Rata-rata (Avg)" style="flex:1; font-size:14px; padding:12px 16px; border-radius:10px; min-width:150px;"/>
+        <input class="search-input" id="myLotSize" type="number" placeholder="Jumlah Lot" style="flex:1; font-size:14px; padding:12px 16px; border-radius:10px; min-width:150px;"/>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); margin-top:8px;">*Isi jika Anda sudah memiliki saham ini untuk mendapatkan instruksi spesifik (Take Profit/Cut Loss/Avg Down).</div>
+    </div>
   </div>
-
+  
   <div id="loading">
     <div class="loader-ring"></div>
     <div class="loading-text" id="loadingText">Memulai analisa...</div>

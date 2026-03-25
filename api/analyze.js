@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     // system_instruction + parseJSON di frontend untuk mengekstrak JSON dari teks bebas.
     const generationConfig = {
       temperature: 0.2,
-      maxOutputTokens: body.maxTokens || 2048,
+      maxOutputTokens: body.maxTokens || 8192,
     };
     if (!useSearch) {
       generationConfig.responseMimeType = 'application/json';

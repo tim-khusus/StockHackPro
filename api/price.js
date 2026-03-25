@@ -105,7 +105,64 @@ export default async function handler(req, res) {
       ? parseFloat(recentDivs.reduce((a,b) => a+b, 0).toFixed(0))
       : null;
 
-    // ── 4. Harga live dari meta ─────────────────────────────────
+    // ── 4. Fundamental dari quoteSummary (paralel, non-blocking) ─
+    let fundamental = null;
+    try {
+      const qsUrl = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}`
+        + `?modules=financialData%2CdefaultKeyStatistics&formatted=false&corsDomain=finance.yahoo.com`;
+      const qsRes = await fetch(qsUrl, { headers: H });
+      if (qsRes.ok) {
+        const qsJson = await qsRes.json();
+        const fd  = qsJson?.quoteSummary?.result?.[0]?.financialData      || {};
+        const ks  = qsJson?.quoteSummary?.result?.[0]?.defaultKeyStatistics || {};
+        const n   = (v) => { const x = parseFloat(v); return isNaN(x) || !isFinite(x) ? null : x; };
+        const pct = (v) => { const x = n(v); return x === null ? null : parseFloat((Math.abs(x) > 1 ? x : x * 100).toFixed(2)); };
+
+        // EPS — Yahoo simpan trailingEps dalam mata uang lokal (Rupiah untuk .JK)
+        const eps_ttm = n(ks.trailingEps);
+
+        // Book Value per share
+        const book_value = n(ks.bookValue);
+
+        // ROE — Yahoo kirim sebagai desimal (0.17 = 17%)
+        const roe_ttm = pct(fd.returnOnEquity);
+
+        // ROA
+        const roa_ttm = pct(fd.returnOnAssets);
+
+        // Net margin — desimal → persen
+        const net_margin = pct(fd.profitMargins);
+
+        // Debt to Equity — Yahoo sudah dalam rasio biasa
+        const debt_to_equity = n(fd.debtToEquity);
+
+        // Current Ratio
+        const current_ratio = n(fd.currentRatio);
+
+        // Beta
+        const beta = n(ks.beta);
+
+        // EPS growth (trailing)
+        const eps_growth_rate = pct(ks.earningsQuarterlyGrowth ?? fd.earningsGrowth);
+
+        fundamental = {
+          found: eps_ttm !== null || book_value !== null || roe_ttm !== null,
+          eps_ttm,
+          book_value,
+          roe_ttm,
+          roa_ttm,
+          net_margin,
+          debt_to_equity,
+          current_ratio,
+          beta,
+          eps_growth_rate,
+        };
+      }
+    } catch (fsErr) {
+      console.warn('[price.js] quoteSummary failed (non-fatal):', fsErr.message);
+    }
+
+    // ── 5. Harga live dari meta ─────────────────────────────────
     const price     = meta.regularMarketPrice || meta.previousClose || 0;
     const prevClose = meta.previousClose || (closes.length > 1 ? closes[closes.length-2] : 0) || 0;
     const change    = meta.regularMarketChange || (price - prevClose) || 0;
@@ -144,6 +201,9 @@ export default async function handler(req, res) {
       // ── Dividen REAL dari chart events ──────────────────────────
       dps_from_chart:   dpsFromChart,
       dividend_events:  recentDivs,
+
+      // ── Fundamental dari Yahoo quoteSummary (null jika gagal) ──
+      fundamental,
     });
 
   } catch (err) {

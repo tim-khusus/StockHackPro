@@ -14,7 +14,6 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body;
-    // Validasi: harus ada field 'prompt' (string) yang dikirim dari frontend
     if (!body?.prompt || typeof body.prompt !== 'string') {
       return res.status(400).json({ error: 'Request tidak valid: field "prompt" diperlukan' });
     }
@@ -22,27 +21,38 @@ export default async function handler(req, res) {
     const useSearch = body.useSearch === true;
     const model = body.model || 'gemini-2.5-flash';
 
-    // Bangun payload untuk Gemini API
+    // PENTING: responseMimeType:'application/json' TIDAK kompatibel dengan google_search.
+    // Kalau keduanya dipakai bersamaan, Gemini mengembalikan respons kosong/error.
+    // Solusi: saat useSearch=true, hilangkan responseMimeType dan andalkan
+    // system_instruction + parseJSON di frontend untuk mengekstrak JSON dari teks bebas.
+    const generationConfig = {
+      temperature: 0.2,
+      maxOutputTokens: body.maxTokens || 2048,
+    };
+    if (!useSearch) {
+      generationConfig.responseMimeType = 'application/json';
+    }
+
     const geminiPayload = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: body.prompt }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.2,         // rendah agar output JSON konsisten
-        maxOutputTokens: body.maxTokens || 2048,
-        responseMimeType: 'text/plain',
+      // Paksa model selalu balas dengan JSON murni tanpa markdown wrapper
+      system_instruction: {
+        parts: [{
+          text: 'You are a financial data assistant for Indonesian stocks (IDX). Always respond with raw valid JSON only. Never wrap your response in markdown code blocks. Never add explanation text before or after the JSON. Your entire response must start with { and end with }.',
+        }],
       },
+      contents: [{
+        role: 'user',
+        parts: [{ text: body.prompt }],
+      }],
+      generationConfig,
     };
 
-    // Aktifkan Google Search grounding jika diminta
     if (useSearch) {
       geminiPayload.tools = [{ google_search: {} }];
     }
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const endpoint =
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -57,12 +67,19 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: errMsg });
     }
 
-    // Normalisasi respons ke format yang mudah dikonsumsi frontend:
-    // { text: "..." }
-    const text = data?.candidates?.[0]?.content?.parts
-      ?.filter(p => p.text)
-      ?.map(p => p.text)
-      ?.join('') || '';
+    // Gabungkan semua text parts (google_search bisa menghasilkan beberapa parts)
+    const text = (data?.candidates?.[0]?.content?.parts || [])
+      .filter(p => typeof p.text === 'string')
+      .map(p => p.text)
+      .join('');
+
+    if (!text) {
+      // Kembalikan detail lengkap supaya mudah debug di Vercel logs
+      const finishReason = data?.candidates?.[0]?.finishReason || 'unknown';
+      return res.status(500).json({
+        error: `Gemini mengembalikan respons kosong (finishReason: ${finishReason})`,
+      });
+    }
 
     return res.status(200).json({ text });
 

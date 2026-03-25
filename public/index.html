@@ -236,7 +236,7 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
 <body>
 <div class="container">
   <header>
-    <div class="logo">SAHAM.AI<span>Harga Wajar · Bandarmologi · Teknikal · IDX</span></div>
+    <div class="logo">SAHAM.AI<span>Harga Wajar · Bandarmologi · Teknikal · IDX · Gemini</span></div>
     <div class="live-badge"><div class="live-dot"></div>REAL-TIME · IDX DATA</div>
   </header>
 
@@ -279,7 +279,7 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
     <div class="loading-steps">
       <div class="loading-step" id="step1">▸ [1/2] Harga real-time — Yahoo Finance (tanpa AI)</div>
       <div class="loading-step" id="step2">▸ ────────────────────────────────────────────────</div>
-      <div class="loading-step" id="step3">▸ [2/2] AI — Fundamental · Bandarmologi · Rekomendasi</div>
+      <div class="loading-step" id="step3">▸ [2/2] Gemini AI — Fundamental · Bandarmologi · Rekomendasi</div>
       <div class="loading-step" id="step4">▸ Kalkulasi harga wajar + render hasil...</div>
       <div class="loading-step" id="step5" style="display:none;"></div>
     </div>
@@ -293,13 +293,13 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
   </div>
 
   <div class="disclaimer">
-    ⚠ DISCLAIMER: Data harga dari Yahoo Finance (±15 mnt delay). Bandarmologi berbasis data volume publik — bukan akses data broker langsung.
+    ⚠ DISCLAIMER: Data harga dari Yahoo Finance (±15 mnt delay). Analisa AI oleh Gemini 2.5 Flash + Google Search. Bandarmologi berbasis data volume publik — bukan akses data broker langsung.
     Analisa ini bersifat edukatif, bukan saran investasi resmi. Investasi saham mengandung risiko kerugian.
   </div>
 </div>
 
 <script>
-// API request dikirim ke serverless proxy Vercel — API key tersembunyi di server
+// API request dikirim ke serverless proxy Vercel — Gemini API key tersembunyi di server
 const API = "/api/analyze";
 let analysisHistory = [];
 
@@ -319,13 +319,18 @@ function setTxt(t,s=''){
 }
 
 
-async function callClaude(messages, useSearch=false, maxTok=1400){
-  const body={model:'claude-sonnet-4-20250514',max_tokens:maxTok,messages};
-  if(useSearch) body.tools=[{type:'web_search_20250305',name:'web_search'}];
+async function callGemini(prompt, useSearch=false, maxTok=2048){
+  const body={
+    model: 'gemini-2.5-flash',
+    prompt,
+    useSearch,
+    maxTokens: maxTok,
+  };
   const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${r.status}`);}
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r.status}`);}
   const d=await r.json();
-  return d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  if(d.error) throw new Error(d.error);
+  return d.text||'';
 }
 
 function parseJSON(text){
@@ -391,7 +396,7 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
     '"a":{"keputusan":"HOLD","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"","Posisi 52W":"","Momentum":"","Volume":"","Support":"Rp ' + p.week52_low + '","Resistance":"Rp ' + p.week52_high + '","Tren":""},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}}' +
     '\nIsi semua null dengan data TERBARU. Untuk f: cukup isi eps_ttm, book_value_per_share, roe, roa, net_margin, debt_to_equity, current_ratio, beta, eps_growth_rate, dps. JANGAN isi pe_ratio dan pb_ratio.';
 
-  const txt = await callClaude([{role:'user', content: prompt}], true, 1600);
+  const txt = await callGemini(prompt, true, 2048);
   const d = parseJSON(txt);
   if (!d.f || !d.bm || !d.a) throw new Error('Respons tidak lengkap, coba lagi');
 
@@ -513,7 +518,7 @@ async function runAnalysis(){
     const P=await fetchPrice(ticker);
 
     // CALL 2: Fundamental + Bandarmologi + Analisa — 1 Claude call saja
-    setTxt('Analisa AI...','Fundamental · Bandarmologi · Rekomendasi · 1 call');
+    setTxt('Analisa AI...','Fundamental · Bandarmologi · Rekomendasi · Gemini 2.5 Flash');
     setStep(2);
     const {f:F, bm:bmRaw, a:A}=await fetchAllAnalysis(ticker,P,P.dps_from_chart);
 

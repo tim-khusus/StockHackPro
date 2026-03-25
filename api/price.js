@@ -123,6 +123,7 @@ export default async function handler(req, res) {
       price:          Math.round(price),
       change:         Math.round(change),
       change_pct:     parseFloat(changePct.toFixed ? changePct.toFixed(2) : changePct),
+      last_updated:   meta.regularMarketTime || Math.floor(Date.now() / 1000),
       open:           Math.round(meta.regularMarketOpen    || (opens[lastI]  ?? 0)),
       high:           Math.round(meta.regularMarketDayHigh || (highs[lastI]  ?? 0)),
       low:            Math.round(meta.regularMarketDayLow  || (lows[lastI]   ?? 0)),

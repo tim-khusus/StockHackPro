@@ -427,7 +427,7 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
     'Return ONLY valid JSON, no markdown:\n' +
     '{"f":{"eps_ttm":null,"eps_growth_rate":null,"book_value_per_share":null,"dps":' + dpsVal + ',"dividend_yield":null,"roe":null,"roa":null,"net_margin":null,"debt_to_equity":null,"current_ratio":null,"pe_ratio":null,"pb_ratio":null,"beta":null,"cost_of_equity":null},' +
     '"bm":{"ff_30d":null,"ff_trend":"neutral","foreign_own_pct":null,"bb":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"bs":[{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0},{"c":"","n":"","l":0,"v":0}],"broker_real":false,"buyer_type":"unknown","score":50,"phase":"neutral","wyckoff":null,"wyckoff_desc":null,"inst_sig":"neutral","unusual_vol":false,"unusual_desc":null,"pv_div":false,"div_type":"none","vwap":"at_vwap","adl":"neutral","vol_trend":"stable","confidence":"low","summary":""},' +
-    '"a":{"keputusan":"HOLD","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"","Posisi 52W":"","Momentum":"","Volume":"","Support":"Rp ' + p.week52_low + '","Resistance":"Rp ' + p.week52_high + '","Tren":""},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}}' +
+    '"a":{"keputusan":"HOLD","area_entry":"Rentang beli ideal berdasarkan support teknikal (misal: Rp 800 - Rp 820)","confidence":65,"target_harga":"Rp ' + Math.round(p.price*1.1) + '","stop_loss":"Rp ' + Math.round(p.price*0.93) + '","potensi_gain":"+10%","risk_level":5,"teknikal":{"RSI":"","Posisi 52W":"","Momentum":"","Volume":"","Support":"Rp ' + p.week52_low + '","Resistance":"Rp ' + p.week52_high + '","Tren":""},"sentimen":"Netral","katalis":["","",""],"risiko":["",""],"analisa":""}}' +
     '\nIsi semua null dengan data TERBARU. Untuk f: cukup isi eps_ttm, book_value_per_share, roe, roa, net_margin, debt_to_equity, current_ratio, beta, eps_growth_rate, dps. JANGAN isi pe_ratio dan pb_ratio.';
 
   const txt = await callGemini(prompt, true, 8192);
@@ -937,6 +937,23 @@ function renderResult(ticker,P,F,FV,BM,A){
     fvHTML=`<div class="fairvalue-section" style="opacity:.65;"><div class="fv-title" style="margin-bottom:10px;">⬡ Harga Wajar — Data Fundamental Tidak Cukup</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);">Data EPS/Book Value tidak tersedia. Coba saham blue chip (BBCA, BBRI, TLKM, ASII).</div></div>`;
   }
 
+const safeAreaEntry = (A.area_entry && A.area_entry !== '-' && String(A.area_entry).trim() !== '') 
+    ? A.area_entry 
+    : 'Menunggu konfirmasi support';
+
+  // Render kotak Area Entry HANYA jika keputusannya BUY atau HOLD
+  const showEntryBox = (A.keputusan === 'BUY' || A.keputusan === 'HOLD');
+  const entryBoxHTML = showEntryBox ? `
+    <div style="background: rgba(0, 230, 118, 0.05); border: 1px dashed var(--buy); padding: 14px; border-radius: 12px; margin-bottom: 18px;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--buy); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;">
+        // Titik Entry Ideal (Buy Area)
+      </div>
+      <div style="font-size: 18px; font-weight: 700; color: var(--text);">
+        ${safeAreaEntry}
+      </div>
+    </div>
+  ` : '';
+  
   const html=`
   <div class="badge-row">
     <span class="badge badge-green">✓ HARGA REAL · Yahoo Finance</span>
@@ -972,6 +989,7 @@ function renderResult(ticker,P,F,FV,BM,A){
     </div>
   </div>
 
+${entryBoxHTML}
   <div class="metrics-grid">
     <div class="metric-card"><div class="metric-label">Target Harga</div><div class="metric-value positive">${A.target_harga}</div></div>
     <div class="metric-card"><div class="metric-label">Stop Loss</div><div class="metric-value negative">${A.stop_loss}</div></div>

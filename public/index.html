@@ -354,20 +354,44 @@ function parseJSON(text){
 // Langsung fetch dari Yahoo Finance via /api/price (bukan tanya Claude)
 // ══════════════════════════════════════
 // Ambil harga REAL dari /api/price (Yahoo Finance chart v8)
-async function fetchPrice(ticker){
-  const r = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`);
-  const d = await r.json();
-  if(!d.found) throw new Error(`${ticker} tidak ditemukan. ${d.reason||'Periksa kode saham.'}`);
+async function fetchPrice(ticker) {
+  try {
+    // Menjalankan fetch Harga (Yahoo) dan Fundamental (FMP) secara paralel agar lebih cepat
+    const [priceRes, fundRes] = await Promise.all([
+      fetch(`/api/price?ticker=${ticker}`),
+      fetch(`/api/fundamental?ticker=${ticker}`).catch(() => null) // Ignore error jika FMP gagal
+    ]);
+
+    if (!priceRes.ok) throw new Error(`HTTP ${priceRes.status}`);
+    const d = await priceRes.json();
+    if (!d.found) throw new Error('Data saham tidak ditemukan (mungkin delisted/IPO baru)');
+
+    let fundamentalData = {};
+    if (fundRes && fundRes.ok) {
+      fundamentalData = await fundRes.json();
+    }
   return {
     ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
     open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
     prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
-    market_cap_str: d.market_cap_str, company_name: d.company_name,
-    sector: d.sector, industry: d.industry,
     sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
     dps_from_chart: d.dps_from_chart || null,
     last_updated: d.last_updated
-  };
+
+// Data dari FMP (Fundamental Update)
+      company_name: fundamentalData.company_name || d.company_name,
+      sector: fundamentalData.sector || d.sector,
+      industry: fundamentalData.industry || d.industry,
+      market_cap: fundamentalData.market_cap || null,
+      eps_ttm: fundamentalData.eps_ttm || null,
+      pe_ratio_ttm: fundamentalData.pe_ratio_ttm || null,
+      pb_ratio_ttm: fundamentalData.pb_ratio_ttm || null,
+      roe_ttm: fundamentalData.roe_ttm || null,
+      dividend_yield: fundamentalData.dividend_yield_ttm || null
+    };
+  } catch(e) {
+    throw e;
+  }
 }
 
 // ═══════════════════════════════════════════════════════

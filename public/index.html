@@ -334,10 +334,19 @@ async function callGemini(prompt, useSearch=false, maxTok=2048){
 }
 
 function parseJSON(text){
-  const m=text.match(/\{[\s\S]*\}/);
-  if(!m)throw new Error('Format respons tidak valid');
-  try{return JSON.parse(m[0]);}
-  catch(e){throw new Error('Parse gagal: '+e.message);}
+  // 1. Bersihkan markdown code fence yang sering ditambahkan Gemini
+  let clean = text
+    .replace(/^```[a-z]*\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+  // 2. Ambil dari { pertama sampai } terakhir
+  const start = clean.indexOf('{');
+  const end   = clean.lastIndexOf('}');
+  if(start === -1 || end === -1 || end <= start)
+    throw new Error('Format respons tidak valid — tidak ditemukan JSON');
+  const jsonStr = clean.slice(start, end + 1);
+  try{ return JSON.parse(jsonStr); }
+  catch(e){ throw new Error('Parse gagal: ' + e.message); }
 }
 
 // ══════════════════════════════════════

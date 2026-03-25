@@ -4,12 +4,14 @@
     { "src": "api/analyze.js", "use": "@vercel/node" },
     { "src": "api/price.js",   "use": "@vercel/node" },
     { "src": "api/debug.js",   "use": "@vercel/node" },
+    { "src": "api/fundamental.js",   "use": "@vercel/node" },
     { "src": "public/**",      "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api/analyze", "dest": "/api/analyze.js" },
     { "src": "/api/price",   "dest": "/api/price.js"   },
     { "src": "/api/debug",   "dest": "/api/debug.js"   },
+    { "src": "/api/fundamental",   "dest": "/api/fundamental.js"   },
     { "src": "/(.*)",        "dest": "/public/$1"       }
   ]
 }

@@ -406,6 +406,10 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
     '\nIsi semua null dengan data TERBARU. Untuk f: cukup isi eps_ttm, book_value_per_share, roe, roa, net_margin, debt_to_equity, current_ratio, beta, eps_growth_rate, dps. JANGAN isi pe_ratio dan pb_ratio.';
 
   const txt = await callGemini(prompt, true, 2048);
+  // DEBUG SEMENTARA — hapus setelah masalah solved
+  console.log('=== RAW GEMINI RESPONSE ===');
+  console.log(txt);
+  console.log('=== END RAW RESPONSE ===');
   const d = parseJSON(txt);
   if (!d.f || !d.bm || !d.a) throw new Error('Respons tidak lengkap, coba lagi');
 

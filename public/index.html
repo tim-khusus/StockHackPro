@@ -1065,10 +1065,10 @@ renderResult = function(ticker, P, F, FV, BM, A) {
   _originalRenderResult(ticker, P, F, FV, BM, A);
   
   // 2. Jalankan evaluasi portofolio lokal
-  evaluateMyPortfolio(P, A);
+  evaluateMyPortfolio(ticker, P, A);
 };
 
-function evaluateMyPortfolio(P, A) {
+function evaluateMyPortfolio(ticker, P, A) {
   const avgInput = document.getElementById('myAvgPrice').value;
   const lotInput = document.getElementById('myLotSize').value;
 

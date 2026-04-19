@@ -4,275 +4,254 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAHAM.AI — Analisa Lengkap IDX</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f0f4f8;--surface:#ffffff;--surface2:#f7f9fc;--border:#dde3ec;
-  --accent:#2563eb;--accent2:#059669;
-  --sell:#dc2626;--buy:#059669;--hold:#d97706;
-  --text:#1e293b;--muted:#64748b;--glow:0 0 20px rgba(37,99,235,0.10);
-  --gold:#b45309;--purple:#7c3aed;--orange:#ea580c;
+  /* Skema Warna Dasbor Finansial Elegan */
+  --bg: #f4f7f9;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: #e2e8f0;
+  --accent: #0f172a; /* Slate tua untuk aksen utama */
+  --accent-light: #334155;
+  --sell: #d32f2f;
+  --buy: #059669;
+  --hold: #d97706;
+  --text: #1e293b;
+  --muted: #64748b;
+  --gold: #b45309;
+  --purple: #6d28d9;
+  --orange: #ea580c;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(37,99,235,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(5,150,105,0.05) 0%, transparent 60%);
-  pointer-events:none;z-index:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 .container{max-width:1160px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
 
-header{
-  padding:28px 24px 22px;
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:20px;
-  position:sticky;top:0;
-  background:rgba(240,244,248,0.92);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  z-index:100;
-  margin:0 -24px;
-  box-shadow:0 1px 0 var(--border);
-}
-.logo{font-size:26px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.logo span{font-weight:400;-webkit-text-fill-color:var(--muted);font-size:11px;display:block;letter-spacing:3px;text-transform:uppercase;margin-top:-2px;}
-.live-badge{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(37,99,235,0.07);border:1px solid rgba(37,99,235,0.2);padding:6px 14px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:1px;}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);animation:pulse 1.5s infinite;}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;margin-bottom:24px;}
+.logo{font-size:24px;font-weight:700;letter-spacing:-0.5px;color:var(--accent);}
+.logo span{font-weight:500;color:var(--muted);font-size:12px;display:block;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.live-badge{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-family:'Roboto Mono',monospace;font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.5px;box-shadow:0 1px 2px rgba(0,0,0,0.02);}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--buy);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
-.search-section{padding:36px 0 24px;}
-.search-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;}
+.search-section{padding:12px 0 32px;}
+.search-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
 .search-row{display:flex;gap:12px;align-items:stretch;}
 .search-input-wrap{flex:1;position:relative;}
-.ticker-prefix{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:18px;pointer-events:none;}
-.search-input{width:100%;background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;padding:16px 20px 16px 44px;border-radius:12px;outline:none;text-transform:uppercase;letter-spacing:2px;transition:border-color .2s,box-shadow .2s;}
-.search-input:focus{border-color:var(--accent);box-shadow:var(--glow);}
-.search-input::placeholder{color:#94a3b8;letter-spacing:1px;}
-.analyze-btn{background:linear-gradient(135deg,var(--accent),#1d4ed8);border:none;color:white;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:16px 28px;border-radius:12px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:transform .15s,box-shadow .2s;white-space:nowrap;}
-.analyze-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(37,99,235,.25);}
-.analyze-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-.quick-picks{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;}
-.qp-label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
-.quick-tag{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .15s;letter-spacing:1px;}
-.quick-tag:hover{border-color:var(--accent);color:var(--accent);background:rgba(37,99,235,.05);}
+.ticker-prefix{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-family:'Roboto Mono',monospace;color:var(--muted);font-size:18px;pointer-events:none;}
+.search-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Roboto Mono',monospace;font-size:18px;font-weight:600;padding:16px 20px 16px 44px;border-radius:8px;outline:none;text-transform:uppercase;letter-spacing:1px;transition:border-color .2s,box-shadow .2s;box-shadow:inset 0 1px 2px rgba(0,0,0,0.02);}
+.search-input:focus{border-color:var(--accent-light);box-shadow:0 0 0 3px rgba(15,23,42,0.05);}
+.search-input::placeholder{color:#94a3b8;font-weight:400;}
+.analyze-btn{background:var(--accent);border:none;color:white;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:0 32px;border-radius:8px;cursor:pointer;letter-spacing:0.5px;transition:background-color .2s,transform .1s;white-space:nowrap;box-shadow:0 2px 4px rgba(15,23,42,0.15);}
+.analyze-btn:hover{background:var(--accent-light);transform:translateY(-1px);}
+.analyze-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.quick-picks{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center;}
+.qp-label{font-size:12px;font-weight:500;color:var(--muted);}
+.quick-tag{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Roboto Mono',monospace;font-size:11px;font-weight:500;padding:6px 14px;border-radius:6px;cursor:pointer;transition:all .15s;}
+.quick-tag:hover{border-color:var(--accent);background:var(--surface2);}
 
-#loading{display:none;padding:48px 0;text-align:center;}
-.loader-ring{width:56px;height:56px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 20px;}
+#loading{display:none;padding:60px 0;text-align:center;background:var(--surface);border-radius:12px;border:1px solid var(--border);margin-bottom:24px;}
+.loader-ring{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:4px;}
-.loading-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:16px;}
-.loading-steps{display:flex;flex-direction:column;gap:7px;align-items:center;}
-.loading-step{font-family:'JetBrains Mono',monospace;font-size:11px;color:#cbd5e1;letter-spacing:1px;transition:color .3s;}
-.loading-step.active{color:var(--accent2);}
-.loading-step.done{color:var(--muted);}
+.loading-text{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.loading-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.loading-steps{display:flex;flex-direction:column;gap:8px;align-items:center;}
+.loading-step{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--muted);transition:color .3s;}
+.loading-step.active{color:var(--accent);font-weight:600;}
+.loading-step.done{color:#cbd5e1;}
 
-.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
-.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;}
-.badge-green{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);color:var(--buy);}
-.badge-gold{background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);color:var(--gold);}
-.badge-orange{background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.25);color:var(--orange);}
-.badge-purple{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:var(--purple);}
+.badge-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;font-family:'Roboto Mono',monospace;font-size:11px;font-weight:600;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);}
+.badge-green{border-left:3px solid var(--buy);}
+.badge-gold{border-left:3px solid var(--gold);}
+.badge-orange{border-left:3px solid var(--orange);}
+.badge-purple{border-left:3px solid var(--purple);}
 
 #result{display:none;padding-bottom:60px;}
-.verdict-card{border-radius:16px;padding:28px;margin-bottom:18px;position:relative;overflow:hidden;border:1.5px solid;box-shadow:0 4px 20px rgba(0,0,0,.06);transition:box-shadow .2s;}
-.verdict-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.10);}
-.verdict-card.buy{background:linear-gradient(135deg,rgba(5,150,105,.07),rgba(5,150,105,.02));border-color:rgba(5,150,105,.35);}
-.verdict-card.sell{background:linear-gradient(135deg,rgba(220,38,38,.07),rgba(220,38,38,.02));border-color:rgba(220,38,38,.35);}
-.verdict-card.hold{background:linear-gradient(135deg,rgba(217,119,6,.07),rgba(217,119,6,.02));border-color:rgba(217,119,6,.35);}
-.verdict-glow{position:absolute;top:-50%;right:-10%;width:280px;height:280px;border-radius:50%;opacity:.06;filter:blur(60px);}
-.buy .verdict-glow{background:var(--buy);}.sell .verdict-glow{background:var(--sell);}.hold .verdict-glow{background:var(--hold);}
-.verdict-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;}
-.stock-ticker-big{font-size:38px;font-weight:800;letter-spacing:-2px;line-height:1;font-family:'JetBrains Mono',monospace;}
-.stock-name{font-size:13px;color:var(--muted);margin-top:4px;font-weight:400;}
-.verdict-badge{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
-.verdict-label{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1;}
-.buy .verdict-label{color:var(--buy);}.sell .verdict-label{color:var(--sell);}.hold .verdict-label{color:var(--hold);}
-.confidence-wrap{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);text-align:right;}
-.confidence-bar-outer{width:120px;height:5px;background:var(--border);border-radius:3px;margin:5px 0;overflow:hidden;}
-.confidence-bar-inner{height:100%;border-radius:3px;width:0;transition:width 1.2s ease;}
-.buy .confidence-bar-inner{background:var(--buy);}.sell .confidence-bar-inner{background:var(--sell);}.hold .confidence-bar-inner{background:var(--hold);}
-.price-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,.06);flex-wrap:wrap;}
-.price-now{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;color:var(--text);line-height:1;}
-.price-change{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;padding:3px 9px;border-radius:6px;}
-.price-change.up{background:rgba(5,150,105,.12);color:var(--buy);}
-.price-change.down{background:rgba(220,38,38,.12);color:var(--sell);}
-.price-change.flat{background:rgba(0,0,0,.05);color:var(--muted);}
-.price-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
 
-.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px;}
-.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.04);transition:box-shadow .2s,transform .2s;}
-.metric-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px);}
-.metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:7px;}
-.metric-value{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;line-height:1;}
+/* Elegan Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden;}
+.card-header{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;justify-content:space-between;align-items:center;}
+.card-title{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;}
+.card-body{padding:24px;}
+
+.verdict-card{position:relative;}
+.verdict-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;}
+.verdict-card.buy::before{background:var(--buy);}
+.verdict-card.sell::before{background:var(--sell);}
+.verdict-card.hold::before{background:var(--hold);}
+
+.verdict-top{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.stock-info{display:flex;flex-direction:column;}
+.stock-ticker-big{font-family:'Roboto Mono',monospace;font-size:42px;font-weight:700;color:var(--text);line-height:1;margin-bottom:8px;}
+.stock-name{font-size:14px;font-weight:500;color:var(--muted);}
+.stock-sector{font-size:12px;color:var(--muted);margin-top:4px;}
+
+.verdict-badge{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+.verdict-label{font-size:36px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.buy .verdict-label{color:var(--buy);}.sell .verdict-label{color:var(--sell);}.hold .verdict-label{color:var(--hold);}
+.confidence-wrap{font-size:12px;font-weight:600;color:var(--muted);text-align:right;}
+.confidence-bar-outer{width:140px;height:6px;background:var(--border);border-radius:3px;margin:6px 0;overflow:hidden;}
+.confidence-bar-inner{height:100%;border-radius:3px;width:0;transition:width 1s ease;}
+.buy .confidence-bar-inner{background:var(--buy);}.sell .confidence-bar-inner{background:var(--sell);}.hold .confidence-bar-inner{background:var(--hold);}
+
+.price-row{display:flex;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.price-now{font-family:'Roboto Mono',monospace;font-size:28px;font-weight:700;color:var(--text);line-height:1;}
+.price-change{font-family:'Roboto Mono',monospace;font-size:14px;font-weight:600;padding:4px 10px;border-radius:6px;}
+.price-change.up{background:rgba(5,150,105,.1);color:var(--buy);}
+.price-change.down{background:rgba(211,47,47,.1);color:var(--sell);}
+.price-change.flat{background:var(--surface2);color:var(--muted);}
+.price-meta{font-family:'Roboto Mono',monospace;font-size:12px;font-weight:500;color:var(--muted);}
+
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:20px;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:var(--shadow);}
+.metric-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
+.metric-value{font-family:'Roboto Mono',monospace;font-size:18px;font-weight:700;line-height:1;}
 .metric-value.positive{color:var(--buy);}.metric-value.negative{color:var(--sell);}.metric-value.neutral{color:var(--text);}.metric-value.gold{color:var(--gold);}
-.metric-sub{font-size:11px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+.metric-sub{font-size:12px;font-weight:500;color:var(--muted);margin-top:6px;}
 
 /* ── FAIR VALUE ── */
-.fairvalue-section{background:var(--surface);border:1.5px solid rgba(180,83,9,.25);border-radius:16px;padding:24px;margin-bottom:18px;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05);transition:box-shadow .2s;}
-.fairvalue-section:hover{box-shadow:0 6px 24px rgba(0,0,0,.08);}
-.fairvalue-section::before{content:'';position:absolute;top:-40%;right:-5%;width:220px;height:220px;border-radius:50%;background:var(--gold);opacity:.04;filter:blur(50px);pointer-events:none;}
-.fv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
-.fv-title{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;}
-.fv-verdict-label{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;padding:5px 13px;border-radius:8px;}
-.fv-undervalue{background:rgba(5,150,105,.10);color:var(--buy);border:1px solid rgba(5,150,105,.25);}
-.fv-overvalue{background:rgba(220,38,38,.10);color:var(--sell);border:1px solid rgba(220,38,38,.25);}
-.fv-fairvalue{background:rgba(217,119,6,.10);color:var(--hold);border:1px solid rgba(217,119,6,.25);}
-.fv-gauge-wrap{margin-bottom:20px;}
-.fv-gauge-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:6px;}
-.fv-gauge-track{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--buy) 0%,var(--hold) 45%,var(--sell) 100%);position:relative;margin-bottom:8px;}
-.fv-gauge-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:left 1.2s cubic-bezier(.34,1.56,.64,1);border:2px solid var(--bg);}
-.fv-gauge-price-label{position:absolute;top:-22px;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text);white-space:nowrap;transition:left 1.2s cubic-bezier(.34,1.56,.64,1);}
-.fv-methods-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:18px;}
-.fv-method-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-.fv-method-card:hover{border-color:rgba(180,83,9,.3);}
-.fv-method-name{font-size:10px;text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:3px;}
-.fv-method-fullname{font-size:11px;color:var(--text);margin-bottom:10px;font-weight:600;}
-.fv-method-price{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--gold);line-height:1;margin-bottom:3px;}
-.fv-method-upside{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;margin-bottom:7px;}
-.fv-method-formula{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:7px;}
-.fv-method-tag{position:absolute;top:10px;right:10px;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:4px;letter-spacing:1px;font-weight:700;}
-.tag-low{background:rgba(5,150,105,.12);color:var(--buy);}
-.tag-high{background:rgba(220,38,38,.12);color:var(--sell);}
-.tag-fair{background:rgba(217,119,6,.12);color:var(--hold);}
-.mos-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:6px 0 4px;}
-.mos-fill{height:100%;border-radius:3px;transition:width 1.2s ease;}
+.fv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.fv-verdict-label{font-size:12px;font-weight:700;letter-spacing:0.5px;padding:6px 16px;border-radius:20px;}
+.fv-undervalue{background:rgba(5,150,105,.1);color:var(--buy);}
+.fv-overvalue{background:rgba(211,47,47,.1);color:var(--sell);}
+.fv-fairvalue{background:rgba(217,119,6,.1);color:var(--hold);}
+
+.fv-gauge-wrap{margin-bottom:24px;}
+.fv-gauge-labels{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;}
+.fv-gauge-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--buy) 0%,var(--hold) 45%,var(--sell) 100%);position:relative;margin-bottom:12px;}
+.fv-gauge-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:white;box-shadow:0 2px 4px rgba(0,0,0,.2);border:2px solid var(--surface);transition:left 1.2s cubic-bezier(.34,1.56,.64,1);}
+.fv-gauge-price-label{position:absolute;top:-24px;transform:translateX(-50%);font-family:'Roboto Mono',monospace;font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;transition:left 1.2s cubic-bezier(.34,1.56,.64,1);}
+
+.fv-methods-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px;}
+.fv-method-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;position:relative;}
+.fv-method-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;}
+.fv-method-fullname{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;}
+.fv-method-price{font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;color:var(--gold);line-height:1;margin-bottom:6px;}
+.fv-method-upside{font-family:'Roboto Mono',monospace;font-size:12px;font-weight:600;margin-bottom:12px;}
+.fv-method-formula{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;}
+.fv-method-tag{position:absolute;top:16px;right:16px;font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;}
+.tag-low{background:rgba(5,150,105,.1);color:var(--buy);}
+.tag-high{background:rgba(211,47,47,.1);color:var(--sell);}
+.tag-fair{background:rgba(217,119,6,.1);color:var(--hold);}
+
+.mos-track{height:8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin:8px 0;}
+.mos-fill{height:100%;border-radius:4px;transition:width 1.2s ease;}
 
 /* ── BANDARMOLOGY ── */
-.bandar-section{background:var(--surface);border:1.5px solid rgba(234,88,12,.25);border-radius:16px;padding:24px;margin-bottom:18px;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05);transition:box-shadow .2s;}
-.bandar-section:hover{box-shadow:0 6px 24px rgba(0,0,0,.08);}
-.bandar-section::before{content:'';position:absolute;top:-40%;left:-5%;width:240px;height:240px;border-radius:50%;background:var(--orange);opacity:.04;filter:blur(55px);pointer-events:none;}
-.bandar-title-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
-.bandar-title{font-size:11px;color:var(--orange);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;}
-.bandar-subtitle{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px;}
-.bandar-verdict-pill{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;padding:5px 14px;border-radius:8px;letter-spacing:1px;white-space:nowrap;}
-.b-akkum{background:rgba(5,150,105,.10);color:var(--buy);border:1px solid rgba(5,150,105,.25);}
-.b-distr{background:rgba(220,38,38,.10);color:var(--sell);border:1px solid rgba(220,38,38,.25);}
-.b-netral{background:rgba(217,119,6,.10);color:var(--hold);border:1px solid rgba(217,119,6,.25);}
-
-.bandar-score-wrap{display:flex;align-items:center;gap:18px;margin-bottom:18px;flex-wrap:wrap;}
-.bandar-score-circle{width:76px;height:76px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid;flex-shrink:0;}
-.bandar-score-num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:800;line-height:1;}
-.bandar-score-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:2px;}
+.bandar-score-wrap{display:flex;align-items:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid var(--border);}
+.bandar-score-circle{width:80px;height:80px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:4px solid;flex-shrink:0;}
+.bandar-score-num{font-family:'Roboto Mono',monospace;font-size:26px;font-weight:700;line-height:1;}
+.bandar-score-lbl{font-size:10px;font-weight:600;color:var(--muted);margin-top:2px;}
 .bandar-score-desc{flex:1;min-width:0;}
-.bandar-score-title{font-size:15px;font-weight:700;margin-bottom:3px;}
-.bandar-score-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.55;}
+.bandar-score-title{font-size:18px;font-weight:700;margin-bottom:6px;}
+.bandar-score-sub{font-size:13px;color:var(--muted);line-height:1.6;}
 
-.wyckoff-bar{display:flex;gap:3px;margin-bottom:16px;flex-wrap:wrap;}
-.wyckoff-phase{flex:1;min-width:60px;text-align:center;padding:7px 4px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border:1px solid var(--border);color:var(--muted);cursor:default;}
-.wyckoff-phase.active{font-weight:700;}
-.wp-acc1.active{background:rgba(5,150,105,.10);color:var(--buy);border-color:rgba(5,150,105,.35);}
-.wp-acc2.active{background:rgba(5,150,105,.15);color:var(--buy);border-color:rgba(5,150,105,.45);}
-.wp-markup.active{background:rgba(37,99,235,.10);color:var(--accent);border-color:rgba(37,99,235,.35);}
-.wp-distr.active{background:rgba(220,38,38,.10);color:var(--sell);border-color:rgba(220,38,38,.35);}
-.wp-markdown.active{background:rgba(220,38,38,.15);color:var(--sell);border-color:rgba(220,38,38,.5);}
-.wp-neutral.active{background:rgba(217,119,6,.08);color:var(--hold);border-color:rgba(217,119,6,.35);}
+.wyckoff-bar{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+.wyckoff-phase{flex:1;min-width:60px;text-align:center;padding:8px 4px;border-radius:6px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--muted);border:1px solid transparent;}
+.wyckoff-phase.active{font-weight:700;box-shadow:var(--shadow);}
+.wp-acc1.active{background:var(--surface);color:var(--buy);border-color:var(--buy);}
+.wp-acc2.active{background:var(--surface);color:var(--buy);border-color:var(--buy);}
+.wp-markup.active{background:var(--surface);color:var(--accent);border-color:var(--accent);}
+.wp-distr.active{background:var(--surface);color:var(--sell);border-color:var(--sell);}
+.wp-markdown.active{background:var(--surface);color:var(--sell);border-color:var(--sell);}
+.wp-neutral.active{background:var(--surface);color:var(--hold);border-color:var(--hold);}
 
-.bandar-signals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px;margin-bottom:16px;}
-.bsc{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;}
-.bsc-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:5px;}
-.bsc-value{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;line-height:1;margin-bottom:4px;}
-.bsc-interp{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+.bandar-signals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;}
+.bsc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;}
+.bsc-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;}
+.bsc-value{font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;line-height:1;margin-bottom:6px;}
+.bsc-interp{font-size:12px;color:var(--text);}
 
-.vol-chart{margin-bottom:16px;}
-.vol-chart-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;}
-.vol-bars{display:flex;align-items:flex-end;gap:5px;height:64px;padding-bottom:2px;}
-.vb{flex:1;border-radius:3px 3px 0 0;min-width:8px;transition:height .8s ease;position:relative;cursor:default;}
+.vol-chart{margin-bottom:24px;}
+.vol-bars{display:flex;align-items:flex-end;gap:4px;height:80px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.vb{flex:1;border-radius:2px 2px 0 0;min-width:8px;transition:height .8s ease;position:relative;}
 .vb:hover .vb-tip{display:block;}
-.vb-tip{display:none;position:absolute;bottom:calc(100%+4px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text);white-space:nowrap;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.08);}
-.vol-chart-labels{display:flex;gap:5px;margin-top:4px;}
-.vol-chart-label{flex:1;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-align:center;overflow:hidden;text-overflow:ellipsis;}
+.vb-tip{display:none;position:absolute;bottom:calc(100%+8px);left:50%;transform:translateX(-50%);background:var(--accent);color:white;border-radius:6px;padding:8px 12px;font-family:'Roboto Mono',monospace;font-size:11px;white-space:nowrap;z-index:10;box-shadow:var(--shadow-hover);}
+.vol-chart-labels{display:flex;gap:4px;margin-top:6px;}
+.vol-chart-label{flex:1;font-family:'Roboto Mono',monospace;font-size:10px;font-weight:500;color:var(--muted);text-align:center;}
 
-.ff-bar-wrap{margin-bottom:16px;}
-.ff-bar-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden;position:relative;margin:6px 0;}
+.ff-bar-wrap{margin-bottom:24px;padding:16px;background:var(--surface2);border-radius:8px;}
+.ff-bar-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden;position:relative;margin:12px 0;}
 .ff-bar-fill{height:100%;border-radius:4px;transition:width 1.2s ease;}
-.ff-center{position:absolute;top:0;left:50%;width:2px;height:100%;background:rgba(255,255,255,.3);}
+.ff-center{position:absolute;top:0;left:50%;width:2px;height:100%;background:rgba(255,255,255,0.5);}
 
-.alert-box{border-radius:8px;padding:10px 13px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;}
-.alert-anomaly{background:rgba(234,88,12,.06);border:1px solid rgba(234,88,12,.25);color:var(--orange);}
-.alert-divergence{background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);color:var(--purple);}
-.alert-foreign{background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2);color:var(--accent);}
+.alert-box{border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
+.alert-anomaly{background:rgba(234,88,12,.05);border:1px solid rgba(234,88,12,.2);color:var(--orange);}
+.alert-divergence{background:rgba(109,40,217,.05);border:1px solid rgba(109,40,217,.2);color:var(--purple);}
+.alert-foreign{background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.2);color:var(--buy);}
 
-.bandar-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:#475569;line-height:1.7;padding:13px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--orange);}
-.data-src-note{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:10px;letter-spacing:1px;opacity:.6;}
+.bandar-text{font-size:14px;color:var(--text);line-height:1.6;padding:16px;background:var(--surface2);border-radius:8px;border-left:4px solid var(--accent);}
+.data-src-note{font-size:11px;color:var(--muted);margin-top:16px;text-align:right;}
 
-.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
-@media(max-width:640px){
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+@media(max-width:768px){
   .analysis-grid{grid-template-columns:1fr;}
   .fv-methods-grid{grid-template-columns:1fr;}
-  .verdict-top{flex-direction:column;}
+  .verdict-top{flex-direction:column;align-items:flex-start;}
   .verdict-badge{align-items:flex-start;}
   .wyckoff-bar{display:none;}
-  .broker-grid{grid-template-columns:1fr!important;}
 }
-.analysis-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.04);transition:box-shadow .2s,transform .2s;}
-.analysis-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px);}
-.card-title{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--border);}
-.card-title.gold{color:var(--gold);}
-.ind-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.05);}
+
+.ind-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
 .ind-row:last-child{border-bottom:none;}
-.ind-n{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap;margin-right:8px;padding-top:1px;}
-.ind-v{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;text-align:right;color:var(--text);}
+.ind-n{font-size:13px;font-weight:500;color:var(--muted);}
+.ind-v{font-family:'Roboto Mono',monospace;font-size:13px;font-weight:600;color:var(--text);}
 
-.risk-section{display:flex;align-items:center;gap:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:18px;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.risk-section{display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
 .risk-label-wrap{flex:1;min-width:130px;}
-.risk-title{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:5px;}
-.risk-value{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.risk-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.risk-value{font-size:22px;font-weight:700;}
 .risk-bar-wrap{flex:3;min-width:180px;}
-.risk-bar-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#059669,#d97706,#dc2626);position:relative;}
-.risk-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:white;box-shadow:0 2px 6px rgba(0,0,0,.25);border:2px solid var(--border);transition:left 1.2s ease;}
+.risk-bar-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#059669,#f59e0b,#d32f2f);position:relative;}
+.risk-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 2px 4px rgba(0,0,0,.2);border:2px solid var(--surface);transition:left 1.2s ease;}
 
-.ai-reasoning{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,.04);}
-.ai-reasoning-text{font-size:14px;line-height:1.85;color:#334155;}
+.ai-reasoning-text{font-size:15px;line-height:1.7;color:var(--text);}
 
 #history-section{margin-bottom:40px;}
-.history-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:3px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
-.history-list{display:flex;flex-direction:column;gap:7px;}
-.history-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
-.history-item:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(37,99,235,.08);}
-.hist-ticker{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;width:68px;}
-.hist-signal{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;width:42px;}
-.hist-signal.buy{color:var(--buy);}.hist-signal.sell{color:var(--sell);}.hist-signal.hold{color:var(--hold);}
-.hist-info{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);flex:1;}
-.hist-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;}
+.history-title{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.history-list{display:flex;flex-direction:column;gap:8px;}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);}
+.history-item:hover{border-color:var(--accent-light);transform:translateY(-1px);}
+.hist-ticker{font-family:'Roboto Mono',monospace;font-size:14px;font-weight:700;color:var(--text);width:70px;}
+.hist-signal{font-size:12px;font-weight:700;padding:4px 8px;border-radius:4px;width:54px;text-align:center;}
+.hist-signal.buy{background:rgba(5,150,105,.1);color:var(--buy);}
+.hist-signal.sell{background:rgba(211,47,47,.1);color:var(--sell);}
+.hist-signal.hold{background:rgba(217,119,6,.1);color:var(--hold);}
+.hist-info{font-family:'Roboto Mono',monospace;font-size:13px;color:var(--muted);flex:1;}
+.hist-time{font-size:12px;font-weight:500;color:var(--muted);}
 
-.disclaimer{background:rgba(217,119,6,.05);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:13px 16px;font-size:12px;color:#92400e;font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:24px;}
-.error-card{background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.25);border-radius:12px;padding:22px;color:var(--sell);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;}
-::-webkit-scrollbar{width:6px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}
-::-webkit-scrollbar-thumb:hover{background:#94a3b8;}
+.disclaimer{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.error-card{background:rgba(211,47,47,.05);border:1px solid rgba(211,47,47,.2);border-radius:12px;padding:24px;color:var(--sell);font-size:14px;line-height:1.6;box-shadow:var(--shadow);}
 
-/* Fade-in animation for result */
-#result{animation:none;}
-#result[style*="block"]{animation:fadeUp .3s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-
-.my-portfolio-card { background: var(--surface2); border: 1.5px dashed; border-radius: 12px; padding: 20px; margin-bottom: 18px; position: relative; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
-.my-pf-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
-.my-pf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px; }
-.my-pf-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
-.my-pf-val { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; }
-.my-pf-verdict-box { background: var(--surface); padding: 14px; border-radius: 8px; border-left: 4px solid; }
+.my-portfolio-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px;}
+.my-pf-title { font-size: 13px; font-weight:700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display:flex; align-items:center; gap:8px;}
+.my-pf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.my-pf-label { font-size: 11px; font-weight:600; color: var(--muted); text-transform:uppercase; margin-bottom: 6px; }
+.my-pf-val { font-family: 'Roboto Mono', monospace; font-size: 20px; font-weight: 700; line-height: 1.2; }
+.my-pf-verdict-box { background: var(--surface); padding: 16px; border-radius: 8px; border-left: 4px solid; box-shadow: var(--shadow);}
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <div class="logo">SAHAM.AI<span>Harga Wajar · Bandarmologi · Teknikal · IDX · Gemini</span></div>
-    <div class="live-badge"><div class="live-dot"></div>REAL-TIME · IDX DATA</div>
+    <div class="logo">SAHAM.AI<span>Dashboard Analisis Profesional</span></div>
+    <div class="live-badge"><div class="live-dot"></div>DATA REAL-TIME</div>
   </header>
 
   <div class="search-section">
-    <div class="search-label">// Masukkan kode saham IDX</div>
+    <div class="search-label">Kode Emiten IDX</div>
     <div class="search-row">
       <div class="search-input-wrap">
         <span class="ticker-prefix">$</span>
         <input class="search-input" id="tickerInput" type="text" placeholder="BBCA, TLKM, ANTM..." maxlength="6" autocomplete="off" spellcheck="false"/>
       </div>
-      <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">🔍 Analisa</button>
+      <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">Analisis Saham</button>
     </div>
     <div class="quick-picks">
-      <span class="qp-label">Quick:</span>
+      <span class="qp-label">Populer:</span>
       <span class="quick-tag" onclick="quickPick('BBCA')">BBCA</span>
       <span class="quick-tag" onclick="quickPick('TLKM')">TLKM</span>
       <span class="quick-tag" onclick="quickPick('BBRI')">BBRI</span>
@@ -284,25 +263,31 @@ header{
       <span class="quick-tag" onclick="quickPick('UNVR')">UNVR</span>
       <span class="quick-tag" onclick="quickPick('BRIS')">BRIS</span>
     </div>
-    <div class="portfolio-inputs" style="margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
-      <div class="search-label" style="color:var(--accent2);">// Data Portofolio Anda (Opsional)</div>
-      <div style="display:flex; gap:12px; align-items:stretch; flex-wrap:wrap;">
-        <input class="search-input" id="myAvgPrice" type="number" placeholder="Harga Rata-rata (Avg)" style="flex:1; font-size:14px; padding:12px 16px; border-radius:10px; min-width:150px;"/>
-        <input class="search-input" id="myLotSize" type="number" placeholder="Jumlah Lot" style="flex:1; font-size:14px; padding:12px 16px; border-radius:10px; min-width:150px;"/>
+    
+    <div class="portfolio-inputs" style="margin-top:24px; padding-top:24px; border-top:1px solid var(--border);">
+      <div class="search-label" style="color:var(--accent);">Data Portofolio Anda (Opsional)</div>
+      <div style="display:flex; gap:16px; align-items:stretch; flex-wrap:wrap;">
+        <div style="flex:1; position:relative; min-width:150px;">
+           <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);font-weight:500;">Rp</span>
+           <input class="search-input" id="myAvgPrice" type="number" placeholder="Harga Rata-rata" style="padding-left:40px;font-size:15px;"/>
+        </div>
+        <div style="flex:1; position:relative; min-width:150px;">
+           <input class="search-input" id="myLotSize" type="number" placeholder="Jumlah Lot" style="font-size:15px; padding-left:16px;"/>
+        </div>
       </div>
-      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); margin-top:8px;">*Isi jika Anda sudah memiliki saham ini untuk mendapatkan instruksi spesifik (Take Profit/Cut Loss/Avg Down).</div>
+      <div style="font-size:12px; color:var(--muted); margin-top:10px;">*Masukkan data di atas untuk panduan instruksi personal (Take Profit/Cut Loss/Average Down).</div>
     </div>
   </div>
 
   <div id="loading">
     <div class="loader-ring"></div>
-    <div class="loading-text" id="loadingText">Memulai analisa...</div>
-    <div class="loading-sub" id="loadingSub">Mengambil data dari internet</div>
+    <div class="loading-text" id="loadingText">Mengumpulkan Data...</div>
+    <div class="loading-sub" id="loadingSub">Menghubungkan ke sumber data finansial</div>
     <div class="loading-steps">
-      <div class="loading-step" id="step1">▸ [1/2] Harga real-time — Yahoo Finance (tanpa AI)</div>
-      <div class="loading-step" id="step2">▸ ────────────────────────────────────────────────</div>
-      <div class="loading-step" id="step3">▸ [2/2] Gemini AI — Fundamental · Bandarmologi · Rekomendasi</div>
-      <div class="loading-step" id="step4">▸ Kalkulasi harga wajar + render hasil...</div>
+      <div class="loading-step" id="step1">1. Sinkronisasi harga real-time</div>
+      <div class="loading-step" id="step2">2. Memuat rasio fundamental</div>
+      <div class="loading-step" id="step3">3. Analisis Bandarmologi & Teknikal (AI)</div>
+      <div class="loading-step" id="step4">4. Menghitung valuasi wajar</div>
       <div class="loading-step" id="step5" style="display:none;"></div>
     </div>
   </div>
@@ -310,13 +295,12 @@ header{
   <div id="result"></div>
 
   <div id="history-section" style="display:none;">
-    <div class="history-title">// Riwayat Analisa Sesi Ini</div>
+    <div class="history-title">Riwayat Sesi Ini</div>
     <div class="history-list" id="historyList"></div>
   </div>
 
   <div class="disclaimer">
-    ⚠ DISCLAIMER: Data harga dari Yahoo Finance (±15 mnt delay). Analisa AI oleh Gemini 2.5 Flash + Google Search. Bandarmologi berbasis data volume publik — bukan akses data broker langsung.
-    Analisa ini bersifat edukatif, bukan saran investasi resmi. Investasi saham mengandung risiko kerugian.
+    <strong>Disclaimer:</strong> Data harga menggunakan penyedia pihak ketiga (delay ±15 menit). Analisis dikelola oleh sistem AI (Gemini) berdasarkan data fundamental dan volume historis. Hasil ini murni bersifat edukasi dan informasi pendukung, bukan merupakan saran keuangan resmi. Segala keputusan investasi berada di tangan Anda.
   </div>
 </div>
 
@@ -366,13 +350,10 @@ function parseJSON(text){
     return JSON.parse(jsonStr); 
   } catch(e) { 
     console.error("AI JSON Output:", jsonStr);
-    throw new Error('AI menghasilkan teks yang tidak wajar. Silakan klik Analisa ulang.'); 
+    throw new Error('AI menghasilkan teks yang tidak wajar. Silakan klik Analisis ulang.'); 
   }
 }
 
-// ══════════════════════════════════════
-// CALL 1 — Mengambil Seluruh Data dari price.js
-// ══════════════════════════════════════
 async function fetchPrice(ticker) {
   try {
     const response = await fetch(`/api/price?ticker=${ticker}`);
@@ -391,40 +372,22 @@ async function fetchPrice(ticker) {
       company_name: d.company_name,
       sector: d.sector,
       industry: d.industry,
-
-      // Data Teknikal Asli (Matematis)
-      rsi_14: d.rsi_14,
-      ma_20: d.ma_20,
-      ma_50: d.ma_50,
-      support_30d: d.support_30d,
-      resist_30d: d.resist_30d,
-      trend_ma: d.trend_ma,
-      momentum_rsi: d.momentum_rsi,
-
-      // Data Fundamental
-      eps_ttm: d.eps_ttm || null,
-      pe_ratio_ttm: d.pe_ratio_ttm || null,
-      pb_ratio_ttm: d.pb_ratio_ttm || null,
-      roe_ttm: d.roe_ttm || null,
-      book_value: d.book_value || null,
-      dividend_yield: d.dividend_yield || null
+      rsi_14: d.rsi_14, ma_20: d.ma_20, ma_50: d.ma_50, support_30d: d.support_30d, resist_30d: d.resist_30d,
+      trend_ma: d.trend_ma, momentum_rsi: d.momentum_rsi,
+      eps_ttm: d.eps_ttm || null, pe_ratio_ttm: d.pe_ratio_ttm || null, pb_ratio_ttm: d.pb_ratio_ttm || null,
+      roe_ttm: d.roe_ttm || null, book_value: d.book_value || null, dividend_yield: d.dividend_yield || null
     };
   } catch(e) {
     throw e;
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// CALL 2 — Gemini AI (Dengan Prompt Fakta Teknikal)
-// ═══════════════════════════════════════════════════════
 async function fetchAllAnalysis(ticker, p, dpsFromChart){
   const sessStr = (p.sessions || []).slice(0, 10).map(s =>
     s.session + '(' + s.date + '):v=' + (s.vol/1e6).toFixed(1) + 'M,p=' + s.price + ',c=' + s.change_pct + '%'
   ).join(' ');
   const dpsLine = dpsFromChart ? 'DPS real dari chart: Rp ' + dpsFromChart : '';
   const dpsVal  = dpsFromChart ? dpsFromChart : 'null';
-
-  // Menyusun Template JSON agar AI tidak berhalusinasi teknikalnya
   const techSupport = p.support_30d || p.week52_low;
   const techResist = p.resist_30d || p.week52_high;
   const techRSI = p.rsi_14 ? `${p.rsi_14} (${p.momentum_rsi||''})` : '';
@@ -469,13 +432,11 @@ async function fetchAllAnalysis(ticker, p, dpsFromChart){
   if (dpsFromChart && dpsFromChart > 0) f.dps = dpsFromChart;
   if (!f.cost_of_equity) f.cost_of_equity = f.beta ? parseFloat((6.5 + f.beta*5.5).toFixed(2)) : 11.0;
 
-  // Timpa paksa dengan data fundamental REAL Yahoo
   if (p.eps_ttm) f.eps_ttm = parseFloat(p.eps_ttm);
   if (p.book_value) f.book_value_per_share = parseFloat(p.book_value);
   if (p.roe_ttm) f.roe = parseFloat(p.roe_ttm);
   if (p.dividend_yield && !f.dps) f.dividend_yield = parseFloat(p.dividend_yield);
 
-  // Kalkulasi PER & PBV
   if (f.eps_ttm > 0)              f.pe_ratio  = parseFloat((p.price / f.eps_ttm).toFixed(2));
   if (f.book_value_per_share > 0) f.pb_ratio  = parseFloat((p.price / f.book_value_per_share).toFixed(2));
   if (f.dps > 0)                  f.dividend_yield = parseFloat((f.dps / p.price * 100).toFixed(2));
@@ -571,18 +532,18 @@ function calcBandarSignals(p, bm){
 // MAIN EXECUTION
 async function runAnalysis(){
   const ticker=document.getElementById('tickerInput').value.trim().toUpperCase();
-  if(!ticker||ticker.length<2){alert('Masukkan kode saham valid');return;}
+  if(!ticker||ticker.length<2){alert('Masukkan kode emiten yang valid.');return;}
   const btn=document.getElementById('analyzeBtn');
   btn.disabled=true;
   document.getElementById('loading').style.display='block';
   document.getElementById('result').style.display='none';
   setStep(0);
   try{
-    setTxt('Mengambil harga & fundamental...','Yahoo Finance API · '+ticker+'.JK');
+    setTxt('Mengambil Harga & Fundamental...','Integrasi Yahoo Finance API · '+ticker+'.JK');
     setStep(0);
     const P=await fetchPrice(ticker);
 
-    setTxt('Analisa AI...','Teknikal · Bandarmologi · Rekomendasi · Gemini 2.5 Flash');
+    setTxt('Memproses Analisis AI...','Teknikal · Bandarmologi · Rekomendasi · Gemini 2.5');
     setStep(2);
     const {f:F, bm:bmRaw, a:A}=await fetchAllAnalysis(ticker,P,P.dps_from_chart);
 
@@ -614,13 +575,12 @@ function upsideCol(n){return n>15?'var(--buy)':n<-15?'var(--sell)':'var(--hold)'
 
 // RENDER BANDARMOLOGY
 function buildBandarHTML(p, bm){
-  if(!bm) return `<div class="bandar-section" style="opacity:.6;"><div class="bandar-title">◉ Bandarmologi — Data Tidak Tersedia</div></div>`;
+  if(!bm) return `<div class="card"><div class="card-header"><div class="card-title">Bandarmologi</div></div><div class="card-body" style="color:var(--muted)">Data Tidak Tersedia</div></div>`;
   const score   = bm.score || 50;
   const verdict = bm.verdict || 'netral';
-  const vClass  = verdict==='akumulasi'?'b-akkum':verdict==='distribusi'?'b-distr':'b-netral';
-  const vLbl    = verdict==='akumulasi'?'⬆ AKUMULASI BANDAR':verdict==='distribusi'?'⬇ DISTRIBUSI BANDAR':'→ KONSOLIDASI';
+  const vLbl    = verdict==='akumulasi'?'↑ AKUMULASI':verdict==='distribusi'?'↓ DISTRIBUSI':'→ KONSOLIDASI';
   const sCol    = score>=65?'var(--buy)':score<=35?'var(--sell)':'var(--hold)';
-  const sBorder = score>=65?'rgba(5,150,105,.5)':score<=35?'rgba(220,38,38,.5)':'rgba(217,119,6,.5)';
+  const sBorder = score>=65?'rgba(5, 150, 105,.3)':score<=35?'rgba(211, 47, 47,.3)':'rgba(217, 119, 6,.3)';
 
   const phases       = ['accumulation_phase_1','accumulation_phase_2','markup','distribution','markdown','neutral'];
   const phaseLabels  = ['AKUM.1','AKUM.2','MARKUP','DISTR.','MARKDN','NETRAL'];
@@ -628,7 +588,7 @@ function buildBandarHTML(p, bm){
   const wyckoffBar   = phases.map((ph,i)=>`<div class="wyckoff-phase ${phaseClasses[i]}${bm.bandar_phase===ph?' active':''}">${phaseLabels[i]}</div>`).join('');
 
   const obvCol = bm.obvTrend==='rising'?'var(--buy)':bm.obvTrend==='falling'?'var(--sell)':'var(--hold)';
-  const obvLbl = bm.obvTrend==='rising'?'↑ NAIK — Akumulasi':bm.obvTrend==='falling'?'↓ TURUN — Distribusi':'→ SIDEWAYS';
+  const obvLbl = bm.obvTrend==='rising'?'↑ Naik (Akumulasi)':bm.obvTrend==='falling'?'↓ Turun (Distribusi)':'→ Sideways';
 
   const ffCol  = bm.foreign_flow_trend==='net_buy'?'var(--buy)':bm.foreign_flow_trend==='net_sell'?'var(--sell)':'var(--muted)';
   const ffLbl  = bm.foreign_flow_trend==='net_buy'?'NET BUY ↑':bm.foreign_flow_trend==='net_sell'?'NET SELL ↓':'NETRAL';
@@ -641,114 +601,117 @@ function buildBandarHTML(p, bm){
   const avgLineH = avgVol > 0 ? (avgVol/maxV*100) : 50;
   const volBarsHTML = sessions.length ? `
   <div class="vol-chart">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="vol-chart-title">Volume 10 Sesi ${sessions.some(s=>s.is_estimated)?'· ★ = estimasi':''}</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">
-        ${bm.volTrend5d!=null?`Tren 5D: <span style="color:${parseFloat(bm.volTrend5d)>=0?'var(--buy)':'var(--sell)'}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;">Volume 10 Sesi Terakhir ${sessions.some(s=>s.is_estimated)?'(★ = estimasi)':''}</div>
+      <div style="font-size:11px;color:var(--muted);">
+        ${bm.volTrend5d!=null?`Tren 5D: <span style="font-weight:600;color:${parseFloat(bm.volTrend5d)>=0?'var(--buy)':'var(--sell)'}">
         ${parseFloat(bm.volTrend5d)>=0?'↑':'↓'}${Math.abs(parseFloat(bm.volTrend5d))}%</span>`:''}</div>
     </div>
     <div class="vol-bars" id="volBarsContainer" style="position:relative;">
-      <div style="position:absolute;bottom:${Math.min(95,avgLineH)}%;left:0;right:0;border-top:1px dashed rgba(0,0,0,.15);pointer-events:none;z-index:1;">
-        <span style="position:absolute;right:0;top:-14px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(100,116,139,.5);">AVG</span>
+      <div style="position:absolute;bottom:${Math.min(95,avgLineH)}%;left:0;right:0;border-top:1px dashed var(--muted);opacity:0.5;pointer-events:none;z-index:1;">
+        <span style="position:absolute;right:0;top:-16px;font-family:'Roboto Mono',monospace;font-size:10px;font-weight:600;color:var(--muted);">Rata-rata</span>
       </div>
       ${sessions.map((s,i)=>{
         const hPct = Math.max(5,(s.vol/maxV)*100);
         const isUp = (s.change_pct||0) >= 0;
         const isHigh = (s.vol||0) > avgVol * 1.5;
-        const col = isHigh ? (isUp?'rgba(5,150,105,.85)':'rgba(220,38,38,.85)') : (isUp?'rgba(5,150,105,.45)':'rgba(220,38,38,.4)');
+        const col = isHigh ? (isUp?'var(--buy)':'var(--sell)') : (isUp?'rgba(5, 150, 105, 0.5)':'rgba(211, 47, 47, 0.5)');
         const est = s.is_estimated?' ★':'';
         return `<div class="vb" style="height:4px;background:${col};" data-h="${hPct}">
-          <div class="vb-tip">${s.session}${est}<br>${s.date||''}<br>Vol: ${fmtM(s.vol)}${isHigh?' ⚡':''}<br>Rp ${fmt(s.price)} ${isUp?'▲':'▼'}${Math.abs(s.change_pct||0).toFixed(1)}%</div>
+          <div class="vb-tip">${s.session}${est}<br>${s.date||''}<br>Vol: ${fmtM(s.vol)}${isHigh?' ⚡':''}<br>Rp ${fmt(s.price)} <span style="color:${isUp?'#a7f3d0':'#fecaca'};font-weight:bold">${isUp?'▲':'▼'}${Math.abs(s.change_pct||0).toFixed(1)}%</span></div>
         </div>`;
       }).join('')}
     </div>
     <div class="vol-chart-labels">${sessions.map(s=>`<div class="vol-chart-label">${s.session}</div>`).join('')}</div>
-    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;flex-wrap:wrap;gap:6px;">
+    <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:500;color:var(--muted);margin-top:8px;flex-wrap:wrap;gap:6px;">
       <span>Avg 30D: ${fmtM(bm.avg_vol_30d)} · Avg 10D: ${fmtM(bm.avg_vol_10d)}</span>
-      <span>Vol Hari Ini: <span style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--muted)'}">
-        ${toN(bm.volRatio)?.toFixed(2)||'-'}x rata-rata ${bm.volRatio>=2?'⚡ SANGAT TINGGI':bm.volRatio>=1.5?'TINGGI':bm.volRatio>=1.2?'Di atas avg':'Normal'}</span></span>
+      <span>Rasio Vol: <span style="font-weight:700;color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--muted)'}">
+        ${toN(bm.volRatio)?.toFixed(2)||'-'}x ${bm.volRatio>=2?'⚡ SANGAT TINGGI':bm.volRatio>=1.5?'TINGGI':bm.volRatio>=1.2?'Di atas avg':'Normal'}</span></span>
     </div>
-    ${bm.candle_volume_pattern?`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--purple);margin-top:6px;padding:6px 10px;background:rgba(124,58,237,.06);border-radius:5px;border-left:2px solid var(--purple);">📊 ${bm.candle_volume_pattern}</div>`:''}
   </div>` : '';
 
   const ffBarHTML = `
   <div class="ff-bar-wrap">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;">
-        Foreign Net Flow ${bm.foreign_ownership_pct!=null?'· Kepemilikan Asing: <span style="color:var(--accent)">'+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%</span>':''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;">
+        Aktivitas Asing (Foreign Flow) ${bm.foreign_ownership_pct!=null?'<span style="font-weight:500;color:var(--muted);text-transform:none">· Porsi: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%</span>':''}
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${ffCol}">${ffLbl}</span>
-        ${bm.foreignStrength?`<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:${ffCol};opacity:.8;">(${bm.foreignStrength})</span>`:''}
+        <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${ffCol}">${ffLbl}</span>
       </div>
     </div>
-    <div class="ff-bar-track" style="position:relative;background:var(--surface2);">
+    <div class="ff-bar-track">
       <div class="ff-center"></div>
       <div class="ff-bar-fill" id="ffBar" style="width:${Math.abs(ffPct-50)}%;background:${ffCol};${ff30!=null&&ff30<0?'margin-left:'+(ffPct)+'%;':'margin-left:50%;'}"></div>
     </div>
-    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;margin-top:4px;flex-wrap:wrap;gap:4px;">
-      <span style="color:var(--sell);">◄ NET SELL</span>
-      <span style="color:var(--muted);">
-        ${bm.foreign_net_buy_today!=null?'Hari ini: <b style="color:'+ffCol+'">'+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+' M</b>':''}&nbsp;
-        ${bm.foreign_net_buy_5d!=null?' · 5D: <b style="color:'+ffCol+'">'+( bm.foreign_net_buy_5d>=0?'+':'')+fmt(bm.foreign_net_buy_5d)+' M</b>':''}
-        ${bm.foreign_net_buy_30d!=null?' · 30D: <b style="color:'+ffCol+'">'+( bm.foreign_net_buy_30d>=0?'+':'')+fmt(bm.foreign_net_buy_30d)+' M</b>':''}
+    <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:500;margin-top:8px;flex-wrap:wrap;gap:4px;">
+      <span style="color:var(--sell);">◄ Net Sell</span>
+      <span style="color:var(--muted);font-family:'Roboto Mono',monospace;">
+        ${bm.foreign_net_buy_today!=null?'1D: <span style="font-weight:700;color:'+ffCol+'">'+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+'M</span>':''}&nbsp;
+        ${bm.foreign_net_buy_5d!=null?' · 5D: <span style="font-weight:700;color:'+ffCol+'">'+( bm.foreign_net_buy_5d>=0?'+':'')+fmt(bm.foreign_net_buy_5d)+'M</span>':''}
+        ${bm.foreign_net_buy_30d!=null?' · 30D: <span style="font-weight:700;color:'+ffCol+'">'+( bm.foreign_net_buy_30d>=0?'+':'')+fmt(bm.foreign_net_buy_30d)+'M</span>':''}
       </span>
-      <span style="color:var(--buy);">NET BUY ►</span>
+      <span style="color:var(--buy);">Net Buy ►</span>
     </div>
   </div>`;
 
   let brokerHTML = '';
   const hasBroker = (bm.top_broker_buy?.length || bm.top_broker_sell?.length);
   if(hasBroker){
-    const buyRows  = (bm.top_broker_buy||[]).slice(0,5).map(b=>`<tr><td style="color:var(--buy);font-weight:700;">${b.broker||'-'}</td><td style="color:var(--text);">${b.name||'-'}</td><td style="color:var(--buy);text-align:right;">${b.net_buy_lot?fmt(b.net_buy_lot)+' lot':'-'}</td><td style="color:var(--buy);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td></tr>`).join('');
-    const sellRows = (bm.top_broker_sell||[]).slice(0,5).map(b=>`<tr><td style="color:var(--sell);font-weight:700;">${b.broker||'-'}</td><td style="color:var(--text);">${b.name||'-'}</td><td style="color:var(--sell);text-align:right;">${b.net_sell_lot?fmt(b.net_sell_lot)+' lot':'-'}</td><td style="color:var(--sell);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+' M':'-'}</td></tr>`).join('');
-    const tStyle = `width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;`;
-    const thStyle = `font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:5px 6px;border-bottom:1px solid var(--border);text-align:left;`;
-    const dataNote = bm.broker_data_available ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">Pembeli dominan: <span style="color:var(--buy)">${bm.dominant_buyer_type||'N/A'}</span> &nbsp;·&nbsp; Penjual dominan: <span style="color:var(--sell)">${bm.dominant_seller_type||'N/A'}</span></div>` : `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);opacity:.6;margin-top:5px;">★ Data broker adalah estimasi — untuk data real gunakan RTI Business / Stockbit Pro</div>`;
-    brokerHTML = `<div style="margin-bottom:16px;"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Ringkasan Broker ${bm.broker_data_available?'':'(Estimasi)'}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--buy);letter-spacing:1px;margin-bottom:6px;">▲ TOP NET BUYER</div><table style="${tStyle}"><thead><tr><th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th><th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th></tr></thead><tbody style="color:var(--text);">${buyRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody></table></div><div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sell);letter-spacing:1px;margin-bottom:6px;">▼ TOP NET SELLER</div><table style="${tStyle}"><thead><tr><th style="${thStyle}">Kode</th><th style="${thStyle}">Broker</th><th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th></tr></thead><tbody style="color:var(--text);">${sellRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody></table></div></div>${dataNote}</div>`;
+    const buyRows  = (bm.top_broker_buy||[]).slice(0,5).map(b=>`<tr><td style="color:var(--buy);font-weight:700;">${b.broker||'-'}</td><td style="color:var(--text);">${b.name||'-'}</td><td style="color:var(--buy);text-align:right;">${b.net_buy_lot?fmt(b.net_buy_lot)+'':'-'}</td><td style="color:var(--buy);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+'M':'-'}</td></tr>`).join('');
+    const sellRows = (bm.top_broker_sell||[]).slice(0,5).map(b=>`<tr><td style="color:var(--sell);font-weight:700;">${b.broker||'-'}</td><td style="color:var(--text);">${b.name||'-'}</td><td style="color:var(--sell);text-align:right;">${b.net_sell_lot?fmt(b.net_sell_lot)+'':'-'}</td><td style="color:var(--sell);text-align:right;">${b.value_bn!=null?'Rp '+(toN(b.value_bn)!=null?toN(b.value_bn).toFixed(1):'0')+'M':'-'}</td></tr>`).join('');
+    const tStyle = `width:100%;border-collapse:collapse;font-family:'Roboto Mono',monospace;font-size:12px;`;
+    const thStyle = `font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;padding:8px 6px;border-bottom:1px solid var(--border);text-align:left;`;
+    const dataNote = bm.broker_data_available ? `<div style="font-size:12px;font-weight:500;color:var(--text);margin-top:12px;padding:12px;background:var(--surface2);border-radius:6px;">Pembeli Utama: <span style="font-weight:700;color:var(--buy)">${bm.dominant_buyer_type||'N/A'}</span> &nbsp;·&nbsp; Penjual: <span style="font-weight:700;color:var(--sell)">${bm.dominant_seller_type||'N/A'}</span></div>` : `<div style="font-size:11px;font-weight:500;color:var(--muted);margin-top:8px;">★ Data broker bersifat estimasi. Gunakan platform sekuritas untuk data real-time.</div>`;
+    brokerHTML = `<div style="margin-bottom:24px;"><div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;margin-bottom:12px;">Ringkasan Broker ${bm.broker_data_available?'':'(Estimasi)'}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;"><div><div style="font-size:11px;font-weight:700;color:var(--buy);margin-bottom:8px;">▲ TOP BUYER</div><table style="${tStyle}"><thead><tr><th style="${thStyle}">Kode</th><th style="${thStyle}">Nama</th><th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th></tr></thead><tbody style="color:var(--text);">${buyRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody></table></div><div><div style="font-size:11px;font-weight:700;color:var(--sell);margin-bottom:8px;">▼ TOP SELLER</div><table style="${tStyle}"><thead><tr><th style="${thStyle}">Kode</th><th style="${thStyle}">Nama</th><th style="${thStyle};text-align:right;">Lot</th><th style="${thStyle};text-align:right;">Nilai</th></tr></thead><tbody style="color:var(--text);">${sellRows||'<tr><td colspan=4 style="color:var(--muted);padding:8px 6px;">Data tidak tersedia</td></tr>'}</tbody></table></div></div>${dataNote}</div>`;
   }
 
   const alerts = [];
-  if(bm.unusual_vol_detected) alerts.push(`<div class="alert-box alert-anomaly">🔔 VOLUME ANOMALI: ${bm.unusual_vol_desc||'Volume tidak biasa terdeteksi'}</div>`);
-  if(bm.price_vol_divergence && bm.divergence_type && bm.divergence_type!=='none') alerts.push(`<div class="alert-box alert-divergence">⚡ DIVERGENSI ${bm.divergence_type==='bullish_divergence'?'BULLISH — Harga turun tapi OBV naik (potensi reversal naik)':'BEARISH — Harga naik tapi OBV turun (potensi reversal turun)'}</div>`);
-  if(bm.wyckoff_event && bm.wyckoff_desc) alerts.push(`<div class="alert-box" style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);color:var(--purple);">◈ WYCKOFF EVENT: <b>${bm.wyckoff_event}</b> — ${bm.wyckoff_desc}</div>`);
-  if(bm.foreign_flow_trend==='net_buy' && (ff30||0)>50) alerts.push(`<div class="alert-box alert-foreign">🌐 FOREIGN BUYING: Asing akumulasi kuat — Net buy Rp ${fmt(ff30)}M (30D)${bm.foreign_ownership_pct?' · Kepemilikan: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%':''}</div>`);
-  if(bm.foreign_flow_trend==='net_sell' && (ff30||0)<-50) alerts.push(`<div class="alert-box" style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.22);color:var(--sell);">⚠ FOREIGN SELLING: Asing distribusi kuat — Net sell Rp ${fmt(Math.abs(ff30))}M (30D)</div>`);
-
-  const pvLabels = {'bullish_confirmation':'✓ Volume Konfirmasi Bullish','bearish_confirmation':'✗ Volume Konfirmasi Bearish','weak_rally':'↑ Rally Tanpa Volume (Lemah)','weak_decline':'↓ Koreksi Tanpa Volume (Normal)'};
+  if(bm.unusual_vol_detected) alerts.push(`<div class="alert-box alert-anomaly">🔔 <strong>Anomali Volume:</strong> ${bm.unusual_vol_desc||'Pergerakan volume di luar kebiasaan.'}</div>`);
+  if(bm.price_vol_divergence && bm.divergence_type && bm.divergence_type!=='none') alerts.push(`<div class="alert-box alert-divergence">⚡ <strong>Divergensi:</strong> ${bm.divergence_type==='bullish_divergence'?'Bullish (Harga turun, OBV naik - potensi reversal)':'Bearish (Harga naik, OBV turun - potensi koreksi)'}</div>`);
+  if(bm.wyckoff_event && bm.wyckoff_desc) alerts.push(`<div class="alert-box alert-divergence" style="border-color:rgba(109,40,217,.3)">◈ <strong>Wyckoff Event (${bm.wyckoff_event}):</strong> ${bm.wyckoff_desc}</div>`);
+  
+  const pvLabels = {'bullish_confirmation':'Validasi Bullish','bearish_confirmation':'Validasi Bearish','weak_rally':'Kenaikan Lemah','weak_decline':'Penurunan Normal'};
 
   const totalSig = bm.accumCount + bm.distribCount;
   const accumPct = totalSig > 0 ? (bm.accumCount/totalSig*100).toFixed(0) : 50;
-  const adBar = totalSig > 0 ? `<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;"><span>Session Distribusi (${bm.distribCount})</span><span style="color:var(--accent);">Akumulasi vs Distribusi (10 sesi)</span><span>Session Akumulasi (${bm.accumCount})</span></div><div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,var(--sell) 0%,var(--sell) ${100-accumPct}%,var(--buy) ${100-accumPct}%,var(--buy) 100%);border-radius:3px;"></div></div></div>` : '';
+  const adBar = totalSig > 0 ? `<div style="margin-bottom:20px;"><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;"><span>Distribusi (${bm.distribCount})</span><span style="color:var(--text);">Rasio A/D (10 Sesi)</span><span>Akumulasi (${bm.accumCount})</span></div><div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,var(--sell) 0%,var(--sell) ${100-accumPct}%,var(--buy) ${100-accumPct}%,var(--buy) 100%);"></div></div></div>` : '';
 
-  const srcNote = bm.data_sources_used?.length ? `<div class="data-src-note">Sumber data: ${bm.data_sources_used.join(' · ')} · Kepercayaan data: <span style="color:${bm.data_confidence==='high'?'var(--buy)':bm.data_confidence==='medium'?'var(--hold)':'var(--sell)'}"> ${(bm.data_confidence||'low').toUpperCase()}</span></div>` : '';
+  const srcNote = bm.data_sources_used?.length ? `<div class="data-src-note">Sumber: ${bm.data_sources_used.join(' · ')} | Tingkat Kepercayaan: <span style="font-weight:700;color:${bm.data_confidence==='high'?'var(--buy)':bm.data_confidence==='medium'?'var(--hold)':'var(--sell)'}"> ${(bm.data_confidence||'Rendah').toUpperCase()}</span></div>` : '';
 
   return `
-  <div class="bandar-section">
-    <div class="bandar-title-row">
-      <div>
-        <div class="bandar-title">◉ Bandarmologi — Analisa Volume &amp; Aktivitas Institusional</div>
-        <div class="bandar-subtitle">OBV · Akumulasi/Distribusi · Foreign Flow · Broker Summary · Wyckoff Cycle</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Bandarmologi & Aktivitas Institusi</div>
+      <div style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:4px;color:${sCol};border:1px solid ${sBorder};background:var(--surface)">${vLbl}</div>
+    </div>
+    <div class="card-body">
+      <div class="bandar-score-wrap">
+        <div class="bandar-score-circle" style="border-color:${sBorder};"><div class="bandar-score-num" style="color:${sCol}">${score}</div><div class="bandar-score-lbl">Skor</div></div>
+        <div class="bandar-score-desc">
+          <div class="bandar-score-title" style="color:${sCol}">Status: ${vLbl}</div>
+          <div class="bandar-score-sub">Tren OBV: <strong style="color:${obvCol}">${obvLbl}</strong> | A/D Line: <strong style="color:${bm.accumulation_distribution_line==='positive'?'var(--buy)':bm.accumulation_distribution_line==='negative'?'var(--sell)':'var(--muted)'}">${bm.accumulation_distribution_line==='positive'?'↑ Positif':bm.accumulation_distribution_line==='negative'?'↓ Negatif':'→ Netral'}</strong><br>${score>=65?'Institusi terindikasi sedang mengakumulasi saham ini.':score<=35?'Terdapat indikasi distribusi oleh institusi/bandar.':'Aktivitas institusi cenderung netral atau belum terkonfirmasi.'}</div>
+        </div>
       </div>
-      <div class="bandar-verdict-pill ${vClass}">${vLbl}</div>
+      
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;margin-bottom:10px;">Fase Siklus Wyckoff ${bm.wyckoff_event?'<span style="color:var(--purple);font-weight:600;text-transform:none">('+bm.wyckoff_event+')</span>':''}</div>
+        <div class="wyckoff-bar">${wyckoffBar}</div>
+      </div>
+      
+      ${alerts.join('')}
+      
+      <div class="bandar-signals-grid">
+        <div class="bsc"><div class="bsc-label">Volume Hari Ini</div><div class="bsc-value" style="color:${bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--text)':'var(--muted)'}">${toN(bm.volRatio)?.toFixed(2)||'-'}x</div><div class="bsc-interp">${bm.volRatio>=1.5?'Signifikan':bm.volRatio>=1.2?'Di atas rata-rata':'Kondisi normal'}</div></div>
+        <div class="bsc"><div class="bsc-label">Price-Volume Signal</div><div class="bsc-value" style="font-size:14px;color:var(--text)">${pvLabels[bm.pvSignal]||bm.pvSignal||'-'}</div><div class="bsc-interp">Kesesuaian tren & volume</div></div>
+        <div class="bsc"><div class="bsc-label">VWAP Intraday</div><div class="bsc-value" style="color:${bm.vwap_relation==='above_vwap'?'var(--buy)':bm.vwap_relation==='below_vwap'?'var(--sell)':'var(--muted)'};font-size:14px;">${(bm.vwap_relation||'N/A').replace(/_/g,' ').toUpperCase()}</div><div class="bsc-interp">${bm.vwap_relation==='above_vwap'?'Harga di atas rata-rata':bm.vwap_relation==='below_vwap'?'Harga di bawah rata-rata':'Bergerak di kisaran rata-rata'}</div></div>
+        <div class="bsc"><div class="bsc-label">Sinyal Institusi</div><div class="bsc-value" style="color:${bm.institutional_signal==='accumulation'?'var(--buy)':bm.institutional_signal==='distribution'?'var(--sell)':'var(--muted)'};font-size:14px;">${(bm.institutional_signal||'neutral').toUpperCase()}</div><div class="bsc-interp">${bm.big_block_trades_today!=null?bm.big_block_trades_today+' transaksi blok terdeteksi':'Berdasarkan data historis'}</div></div>
+      </div>
+      
+      ${adBar}${ffBarHTML}${brokerHTML}${volBarsHTML}
+      <div class="bandar-text"><strong>Rangkuman AI:</strong><br>${bm.bandar_summary||'Interpretasi tidak tersedia.'}</div>
+      ${srcNote}
     </div>
-    <div class="bandar-score-wrap">
-      <div class="bandar-score-circle" style="border-color:${sBorder};"><div class="bandar-score-num" style="color:${sCol}">${score}</div><div class="bandar-score-lbl">/100</div></div>
-      <div class="bandar-score-desc"><div class="bandar-score-title" style="color:${sCol}">${vLbl}</div><div class="bandar-score-sub">OBV: <span style="color:${obvCol}">${obvLbl}</span><br>A/D Line: <span style="color:${bm.accumulation_distribution_line==='positive'?'var(--buy)':bm.accumulation_distribution_line==='negative'?'var(--sell)':'var(--muted)'}">${bm.accumulation_distribution_line==='positive'?'↑ Akumulasi':bm.accumulation_distribution_line==='negative'?'↓ Distribusi':'→ Netral'}</span><br>${score>=65?'Big player sedang akumulasi posisi. Pantau untuk entry.':score<=35?'Big player melepas posisi. Waspadai tekanan jual.':'Belum ada sinyal jelas. Monitor terus.'}</div></div>
-    </div>
-    <div style="margin-bottom:12px;"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;">Fase Wyckoff${bm.wyckoff_event?' · Event terdeteksi: <span style="color:var(--purple)">'+bm.wyckoff_event+'</span>':''}</div><div class="wyckoff-bar">${wyckoffBar}</div></div>
-    ${alerts.join('')}
-    <div class="bandar-signals-grid">
-      <div class="bsc"><div class="bsc-label">Vol Ratio Hari Ini</div><div class="bsc-value" style="color:${bm.volRatio>=2?'var(--sell)':bm.volRatio>=1.5?'var(--orange)':bm.volRatio>=1.2?'var(--hold)':'var(--text)'}">${toN(bm.volRatio)?.toFixed(2)||'-'}x</div><div class="bsc-interp">${bm.volRatio>=2?'⚡ Sangat tinggi':bm.volRatio>=1.5?'Tinggi sekali':bm.volRatio>=1.2?'Diatas rata-rata':bm.volRatio<0.6?'Sangat sepi':'Normal'}</div></div>
-      <div class="bsc"><div class="bsc-label">OBV Trend</div><div class="bsc-value" style="color:${obvCol};font-size:12px;">${(bm.obvTrend||'N/A').toUpperCase()}</div><div class="bsc-interp" style="color:${obvCol}">${obvLbl}</div></div>
-      <div class="bsc"><div class="bsc-label">Price-Volume Signal</div><div class="bsc-value" style="font-size:11px;color:var(--text)">${pvLabels[bm.pvSignal]||bm.pvSignal||'-'}</div><div class="bsc-interp">Konfirmasi tren & kekuatan</div></div>
-      <div class="bsc"><div class="bsc-label">Foreign Flow</div><div class="bsc-value" style="color:${ffCol};font-size:13px;">${ffLbl}</div><div class="bsc-interp" style="color:${ffCol}">${bm.foreignStrength||''} · ${bm.foreign_net_buy_today!=null?'Hari ini: '+( bm.foreign_net_buy_today>=0?'+':'')+fmt(bm.foreign_net_buy_today)+'M':'Kepemilikan: '+(toN(bm.foreign_ownership_pct)!=null?toN(bm.foreign_ownership_pct).toFixed(1):'?')+'%'}</div></div>
-      <div class="bsc"><div class="bsc-label">VWAP</div><div class="bsc-value" style="color:${bm.vwap_relation==='above_vwap'?'var(--buy)':bm.vwap_relation==='below_vwap'?'var(--sell)':'var(--muted)'};font-size:11px;">${(bm.vwap_relation||'N/A').replace(/_/g,' ').toUpperCase()}</div><div class="bsc-interp">${bm.vwap_relation==='above_vwap'?'Bullish intraday':bm.vwap_relation==='below_vwap'?'Bearish intraday':'Dekat VWAP'}</div></div>
-      <div class="bsc"><div class="bsc-label">Institutional Signal</div><div class="bsc-value" style="color:${bm.institutional_signal==='accumulation'?'var(--buy)':bm.institutional_signal==='distribution'?'var(--sell)':'var(--muted)'};font-size:12px;">${(bm.institutional_signal||'neutral').toUpperCase()}</div><div class="bsc-interp">${bm.big_block_trades_today!=null?bm.big_block_trades_today+' block trade hari ini':'Vol 10D: '+(bm.vol_trend_10d||'N/A')}</div></div>
-    </div>
-    ${adBar}${ffBarHTML}${brokerHTML}${volBarsHTML}
-    <div class="bandar-text">${bm.bandar_summary||'Interpretasi bandarmologi tidak tersedia.'}</div>
-    ${srcNote}
   </div>`;
 }
 
@@ -760,9 +723,7 @@ function renderResult(ticker,P,F,FV,BM,A){
   const cs=P.change>=0?'+':'';
   const sc=A.sentimen==='Bullish'?'positive':A.sentimen==='Bearish'?'negative':'neutral';
   const rCol=A.risk_level>=7?'var(--sell)':A.risk_level>=4?'var(--hold)':'var(--buy)';
-  const rLbl=A.risk_level>=7?'HIGH':A.risk_level>=4?'MEDIUM':'LOW';
-  const p52H=P.week52_high?((P.price-P.week52_high)/P.week52_high*100).toFixed(1):null;
-  const p52L=P.week52_low?((P.price-P.week52_low)/P.week52_low*100).toFixed(1):null;
+  const rLbl=A.risk_level>=7?'TINGGI':A.risk_level>=4?'MENENGAH':'RENDAH';
 
   let timeWIB = 'N/A';
   if (P.last_updated) {
@@ -777,7 +738,6 @@ function renderResult(ticker,P,F,FV,BM,A){
     const stCls=FV.status==='undervalue'?'fv-undervalue':FV.status==='overvalue'?'fv-overvalue':'fv-fairvalue';
     const mos=parseFloat(FV.mos);
     const mosCol=mos>20?'var(--buy)':mos>0?'var(--hold)':'var(--sell)';
-    const gPos=Math.min(95,Math.max(5,50+up*.5));
     const mCards=Object.values(FV.methods).map(m=>{
       const mu=(m.price-P.price)/P.price*100;
       return`<div class="fv-method-card">
@@ -785,50 +745,52 @@ function renderResult(ticker,P,F,FV,BM,A){
         <div class="fv-method-name">${m.abbr}</div>
         <div class="fv-method-fullname">${m.method}</div>
         <div class="fv-method-price">Rp ${fmt(m.price)}</div>
-        <div class="fv-method-upside" style="color:${upsideCol(mu)}">${mu>=0?'+':''}${mu.toFixed(1)}% dari harga</div>
+        <div class="fv-method-upside" style="color:${upsideCol(mu)}">${mu>=0?'+':''}${mu.toFixed(1)}% vs Harga</div>
         <div class="fv-method-formula">${m.formula}</div>
       </div>`;
     }).join('');
+    
     fvHTML=`
-    <div class="fairvalue-section">
-      <div class="fv-header">
-        <div><div class="fv-title">⬡ Harga Wajar — ${FV.count} Metode Valuasi Fundamental</div><div style="font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;">Data real: EPS, Book Value, ROE, Dividen</div></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Valuasi Wajar (${FV.count} Metode)</div>
         <div class="fv-verdict-label ${stCls}">${stLbl}</div>
       </div>
-      <div style="text-align:center;margin-bottom:16px;">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:5px;text-transform:uppercase;">Konsensus Berbobot</div>
-        <div style="display:flex;align-items:baseline;justify-content:center;gap:10px;flex-wrap:wrap;">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--gold);">Rp ${fmt(FV.consensus)}</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 9px;border-radius:6px;background:rgba(${FV.status==='undervalue'?'5,150,105':FV.status==='overvalue'?'220,38,38':'217,119,6'},.12);color:${upsideCol(up)}">${up>=0?'+':''}${FV.upside}%</div>
+      <div class="card-body">
+        <div style="text-align:center;margin-bottom:32px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Konsensus Target Harga</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+            <div style="font-family:'Roboto Mono',monospace;font-size:36px;font-weight:700;color:var(--text);">Rp ${fmt(FV.consensus)}</div>
+            <div style="font-family:'Roboto Mono',monospace;font-size:14px;font-weight:700;padding:6px 12px;border-radius:6px;background:rgba(${FV.status==='undervalue'?'5,150,105':FV.status==='overvalue'?'211,47,47':'217,119,6'},.1);color:${upsideCol(up)}">${up>=0?'+':''}${FV.upside}%</div>
+          </div>
+          <div style="font-size:13px;font-weight:500;color:var(--muted);margin-top:8px;">Berdasarkan EPS, Book Value, ROE & Dividen TTM</div>
         </div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:3px;">Harga saat ini Rp ${fmt(P.price)} · Selisih Rp ${fmt(Math.abs(FV.consensus-P.price))}</div>
+        
+        <div class="fv-gauge-wrap">
+          <div class="fv-gauge-labels"><span>Undervalue</span><span>Fair</span><span>Overvalue</span></div>
+          <div class="fv-gauge-track"><div class="fv-gauge-price-label" id="gLbl" style="left:5%">Rp ${fmt(P.price)}</div><div class="fv-gauge-marker" id="gMark" style="left:5%"></div></div>
+        </div>
+        
+        <div class="fv-methods-grid">${mCards}</div>
+        
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;">Margin of Safety (MoS)</div>
+          <div style="font-family:'Roboto Mono',monospace;font-size:14px;font-weight:700;color:${mosCol}">${mos>0?'+':''}${FV.mos}% ${mos>20?'✓ AMAN':mos>0?'▸ TERBATAS':'✗ NEGATIF'}</div>
+        </div>
+        <div class="mos-track"><div class="mos-fill" id="mosFill" style="width:0%;background:${mosCol};"></div></div>
       </div>
-      <div class="fv-gauge-wrap">
-        <div class="fv-gauge-labels"><span>SANGAT MURAH</span><span>WAJAR</span><span>SANGAT MAHAL</span></div>
-        <div class="fv-gauge-track" style="position:relative;"><div class="fv-gauge-price-label" id="gLbl" style="left:5%">Rp ${fmt(P.price)}</div><div class="fv-gauge-marker" id="gMark" style="left:5%"></div></div>
-        <div style="height:12px;"></div>
-      </div>
-      <div class="fv-methods-grid">${mCards}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;">Margin of Safety</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${mosCol}">${mos>0?'+':''}${FV.mos}% ${mos>20?'✓ AMAN':mos>0?'▸ TERBATAS':'✗ NEGATIF'}</div>
-      </div>
-      <div class="mos-track"><div class="mos-fill" id="mosFill" style="width:0%;background:${mosCol};"></div></div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);opacity:.6;margin-top:5px;">MoS = (Harga Wajar−Harga Saat Ini)÷Harga Wajar × 100 · MoS &gt;20% = zona aman beli</div>
     </div>`;
-  }else{
-    fvHTML=`<div class="fairvalue-section" style="opacity:.65;"><div class="fv-title" style="margin-bottom:10px;">⬡ Harga Wajar — Data Fundamental Tidak Cukup</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);">Data EPS/Book Value tidak tersedia. Coba saham blue chip (BBCA, BBRI, TLKM, ASII).</div></div>`;
+  } else {
+    fvHTML=`<div class="card"><div class="card-header"><div class="card-title">Valuasi Wajar</div></div><div class="card-body" style="color:var(--muted)">Data Fundamental tidak cukup untuk melakukan perhitungan valuasi wajar.</div></div>`;
   }
 
-  const safeAreaEntry = (A.area_entry && A.area_entry !== '-' && String(A.area_entry).trim() !== '') 
-      ? A.area_entry 
-      : 'Menunggu konfirmasi support';
+  const safeAreaEntry = (A.area_entry && A.area_entry !== '-' && String(A.area_entry).trim() !== '') ? A.area_entry : 'Menunggu konfirmasi pola';
 
   const showEntryBox = (A.keputusan === 'BUY' || A.keputusan === 'HOLD');
   const entryBoxHTML = showEntryBox ? `
-    <div style="background: rgba(5,150,105,0.05); border: 1px dashed var(--buy); padding: 14px; border-radius: 12px; margin-bottom: 18px;">
-      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--buy); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;">
-        // Titik Entry Ideal (Buy Area)
+    <div style="background:var(--surface2); border: 1px solid var(--border); border-left: 4px solid var(--buy); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+      <div style="font-size: 12px; font-weight:700; color: var(--buy); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+        Rekomendasi Area Entry
       </div>
       <div style="font-size: 18px; font-weight: 700; color: var(--text);">
         ${safeAreaEntry}
@@ -838,87 +800,107 @@ function renderResult(ticker,P,F,FV,BM,A){
 
   const html=`
   <div class="badge-row">
-    <span class="badge badge-green">✓ HARGA REAL · Yahoo Finance</span>
-    <span class="badge badge-gold">⬡ HARGA WAJAR · ${FV?FV.count+' Metode':'N/A'}</span>
-    <span class="badge badge-orange">◉ BANDARMOLOGI · Vol+Flow</span>
-    <span class="badge badge-purple">◈ AI ANALISA · 5 Tahap</span>
+    <span class="badge badge-green">Data Real-Time</span>
+    <span class="badge badge-gold">Valuasi Fundamental</span>
+    <span class="badge badge-orange">Analisis Bandarmologi</span>
+    <span class="badge badge-purple">Rekomendasi AI</span>
   </div>
 
-  <div class="verdict-card ${vc}">
-    <div class="verdict-glow"></div>
-    <div class="verdict-top">
-      <div>
-        <div class="stock-ticker-big">${ticker}</div>
-        <div class="stock-name">${P.company_name}</div>
-        <div class="stock-name" style="font-size:11px;margin-top:2px;">${P.sector} · ${P.industry||''}</div>
-      </div>
-      <div class="verdict-badge">
-        <div class="verdict-label">${vi} ${A.keputusan}</div>
-        <div class="confidence-wrap">
-          <div class="confidence-bar-outer"><div class="confidence-bar-inner" id="confBar"></div></div>
-          ${A.confidence}% CONFIDENCE
+  <div class="card verdict-card ${vc}">
+    <div class="card-body">
+      <div class="verdict-top">
+        <div class="stock-info">
+          <div class="stock-ticker-big">${ticker}</div>
+          <div class="stock-name">${P.company_name}</div>
+          <div class="stock-sector">${P.sector} ${P.industry ? '· '+P.industry : ''}</div>
+        </div>
+        <div class="verdict-badge">
+          <div class="verdict-label">${vi} ${A.keputusan}</div>
+          <div class="confidence-wrap">
+            <div class="confidence-bar-outer"><div class="confidence-bar-inner" id="confBar"></div></div>
+            AI Confidence: ${A.confidence}%
+          </div>
         </div>
       </div>
-    </div>
-    <div class="price-row">
-      <div class="price-now">Rp ${fmt(P.price)}</div>
-      <div class="price-change ${cd}">${cs}${fmt(P.change)} (${cs}${P.change_pct}%)</div>
-      <div class="price-meta">H:${fmt(P.high)} L:${fmt(P.low)} · Vol:${P.volume?fmtM(P.volume):'N/A'}${P.avg_volume?' · Avg:'+fmtM(P.avg_volume):''}</div>
-      <div class="price-meta" style="width: 100%; color: var(--hold); margin-top: 2px; display: flex; align-items: center; gap: 4px;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-        Waktu Harga: ${timeWIB} (Delay Data ±15 Menit)</div>
+      <div class="price-row">
+        <div class="price-now">Rp ${fmt(P.price)}</div>
+        <div class="price-change ${cd}">${cs}${fmt(P.change)} (${cs}${P.change_pct}%)</div>
+        <div class="price-meta" style="flex:1; text-align:right;">H: ${fmt(P.high)} | L: ${fmt(P.low)} | Vol: ${P.volume?fmtM(P.volume):'N/A'}</div>
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 12px; display: flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Pembaruan terakhir: ${timeWIB}
+      </div>
     </div>
   </div>
 
   ${entryBoxHTML}
+  
   <div class="metrics-grid">
     <div class="metric-card"><div class="metric-label">Target Harga</div><div class="metric-value positive">${A.target_harga}</div></div>
     <div class="metric-card"><div class="metric-label">Stop Loss</div><div class="metric-value negative">${A.stop_loss}</div></div>
     <div class="metric-card"><div class="metric-label">Potensi Gain</div><div class="metric-value ${(A.potensi_gain||'').startsWith('+')?'positive':'negative'}">${A.potensi_gain}</div></div>
-    <div class="metric-card"><div class="metric-label">Harga Wajar</div><div class="metric-value gold">${FV?'Rp '+fmt(FV.consensus):'N/A'}</div>${FV?`<div class="metric-sub" style="color:${upsideCol(parseFloat(FV.upside))}">${parseFloat(FV.upside)>0?'Diskon':'Premium'} ${Math.abs(parseFloat(FV.upside)).toFixed(1)}%</div>`:''}</div>
-    <div class="metric-card"><div class="metric-label">Bandar Score</div><div class="metric-value" style="color:${BM?.score>=65?'var(--buy)':BM?.score<=35?'var(--sell)':'var(--hold)'}">${BM?.score||'-'}/100</div><div class="metric-sub">${BM?.verdict||'N/A'}</div></div>
-    <div class="metric-card"><div class="metric-label">52W Hi/Lo</div><div class="metric-value neutral" style="font-size:14px;">Rp ${fmt(P.week52_high)}</div><div class="metric-sub">Lo: Rp ${fmt(P.week52_low)}</div></div>
-    <div class="metric-card"><div class="metric-label">Sentimen</div><div class="metric-value ${sc}">${A.sentimen}</div><div class="metric-sub" style="color:${rCol}">Risk ${A.risk_level}/10 ${rLbl}</div></div>
+    <div class="metric-card"><div class="metric-label">Bandar Score</div><div class="metric-value" style="color:${BM?.score>=65?'var(--buy)':BM?.score<=35?'var(--sell)':'var(--hold)'}">${BM?.score||'-'}/100</div><div class="metric-sub" style="font-weight:600">${BM?.verdict||'N/A'}</div></div>
+    <div class="metric-card"><div class="metric-label">52W Range</div><div class="metric-value neutral" style="font-size:16px;">Rp ${fmt(P.week52_high)}</div><div class="metric-sub">Low: Rp ${fmt(P.week52_low)}</div></div>
+    <div class="metric-card"><div class="metric-label">Sentimen</div><div class="metric-value ${sc}">${A.sentimen}</div><div class="metric-sub" style="font-weight:600;color:${rCol}">Risk: ${rLbl}</div></div>
   </div>
 
   ${fvHTML}
   ${buildBandarHTML(P,BM)}
 
-  <div class="risk-section">
-    <div class="risk-label-wrap">
-      <div class="risk-title">Risk Meter</div>
-      <div class="risk-value" style="color:${rCol}">${rLbl} · ${A.risk_level}/10</div>
-    </div>
-    <div class="risk-bar-wrap">
-      <div class="risk-bar-track"><div class="risk-marker" id="riskMark"></div></div>
-    </div>
-  </div>
-
-  <div class="analysis-grid">
-    <div class="analysis-card">
-      <div class="card-title">// Indikator Teknikal REAL (Matematis)</div>
-      ${Object.entries(A.teknikal||{}).map(([k,v])=>`<div class="ind-row"><span class="ind-n">${k}</span><span class="ind-v">${v}</span></div>`).join('')}
-    </div>
-    <div class="analysis-card">
-      <div class="card-title gold">// Data Fundamental Real</div>
-      ${[['EPS TTM',F.eps_ttm?'Rp '+fmt(F.eps_ttm):'N/A'],['EPS Growth',F.eps_growth_rate?(F.eps_growth_rate>0?'+':'')+F.eps_growth_rate.toFixed(1)+'%':'N/A'],['Book Value/Share',F.book_value_per_share?'Rp '+fmt(F.book_value_per_share):'N/A'],['DPS (Dividen)',F.dps?'Rp '+fmt(F.dps):'N/A'],['ROE',F.roe?F.roe.toFixed(1)+'%':'N/A'],['ROA',F.roa?F.roa.toFixed(1)+'%':'N/A'],['Net Margin',F.net_margin?F.net_margin.toFixed(1)+'%':'N/A'],['Debt/Equity',F.debt_to_equity!=null?F.debt_to_equity.toFixed(2)+'x':'N/A'],['Current Ratio',F.current_ratio!=null?F.current_ratio.toFixed(2)+'x':'N/A'],['Beta',F.beta!=null?F.beta.toFixed(2):'N/A']].map(([k,v])=>`<div class="ind-row"><span class="ind-n">${k}</span><span class="ind-v">${v}</span></div>`).join('')}
+  <div class="card">
+    <div class="card-body">
+      <div class="risk-section">
+        <div class="risk-label-wrap">
+          <div class="risk-title">Tingkat Risiko Investasi</div>
+          <div class="risk-value" style="color:${rCol}">${rLbl} (${A.risk_level}/10)</div>
+        </div>
+        <div class="risk-bar-wrap">
+          <div class="risk-bar-track"><div class="risk-marker" id="riskMark"></div></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="analysis-grid">
-    <div class="analysis-card">
-      <div class="card-title" style="color:var(--buy);">// Katalis Positif</div>
-      ${(A.katalis||[]).map(k=>`<div style="font-size:12px;color:var(--buy);padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-family:'JetBrains Mono',monospace;line-height:1.4;">✓ ${k}</div>`).join('')}
+    <div class="card">
+      <div class="card-header"><div class="card-title">Indikator Teknikal</div></div>
+      <div class="card-body" style="padding-top:12px;">
+        ${Object.entries(A.teknikal||{}).map(([k,v])=>`<div class="ind-row"><span class="ind-n">${k}</span><span class="ind-v">${v}</span></div>`).join('')}
+      </div>
     </div>
-    <div class="analysis-card">
-      <div class="card-title" style="color:var(--sell);">// Risiko Utama</div>
-      ${(A.risiko||[]).map(r=>`<div style="font-size:12px;color:var(--sell);padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-family:'JetBrains Mono',monospace;line-height:1.4;">⚠ ${r}</div>`).join('')}
+    <div class="card">
+      <div class="card-header"><div class="card-title" style="color:var(--text)">Kinerja Fundamental</div></div>
+      <div class="card-body" style="padding-top:12px;">
+        ${[['EPS TTM',F.eps_ttm?'Rp '+fmt(F.eps_ttm):'N/A'],['Book Value/Share',F.book_value_per_share?'Rp '+fmt(F.book_value_per_share):'N/A'],['ROE',F.roe?F.roe.toFixed(1)+'%':'N/A'],['Net Margin',F.net_margin?F.net_margin.toFixed(1)+'%':'N/A'],['Debt/Equity',F.debt_to_equity!=null?F.debt_to_equity.toFixed(2)+'x':'N/A'],['P/E Ratio',F.pe_ratio!=null?F.pe_ratio.toFixed(2)+'x':'N/A']].map(([k,v])=>`<div class="ind-row"><span class="ind-n">${k}</span><span class="ind-v">${v}</span></div>`).join('')}
+      </div>
     </div>
   </div>
 
-  <div class="ai-reasoning">
-    <div class="card-title">// Analisa AI — Ringkasan &amp; Rekomendasi Final</div>
-    <div class="ai-reasoning-text">${A.analisa}</div>
+  <div class="analysis-grid">
+    <div class="card">
+      <div class="card-header"><div class="card-title" style="color:var(--buy)">Katalis Positif</div></div>
+      <div class="card-body">
+        <ul style="list-style-type:none;display:flex;flex-direction:column;gap:12px;">
+          ${(A.katalis||[]).map(k=>`<li style="font-size:14px;color:var(--text);line-height:1.5;display:flex;gap:10px;"><span style="color:var(--buy);font-weight:bold;">✓</span> ${k}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" style="color:var(--sell)">Risiko Utama</div></div>
+      <div class="card-body">
+        <ul style="list-style-type:none;display:flex;flex-direction:column;gap:12px;">
+          ${(A.risiko||[]).map(r=>`<li style="font-size:14px;color:var(--text);line-height:1.5;display:flex;gap:10px;"><span style="color:var(--sell);font-weight:bold;">⚠</span> ${r}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title" style="color:var(--text)">Kesimpulan Analisis AI</div></div>
+    <div class="card-body">
+      <div class="ai-reasoning-text">${A.analisa}</div>
+    </div>
   </div>`;
 
   const el=document.getElementById('result');
@@ -952,7 +934,7 @@ function renderResult(ticker,P,F,FV,BM,A){
 }
 
 function renderError(msg){
-  document.getElementById('result').innerHTML=`<div class="error-card">⚠ Error: ${msg}<br><br>Tips:<br>• Kode saham benar (BBCA, TLKM, GOTO, ANTM)<br>• Saham kecil mungkin data terbatas<br>• Coba lagi beberapa detik</div>`;
+  document.getElementById('result').innerHTML=`<div class="error-card"><strong>⚠ Error sistem:</strong> ${msg}<br><br>Saran penyelesaian:<br>• Pastikan kode emiten valid (Contoh: BBCA, TLKM)<br>• Coba kembali dalam beberapa detik</div>`;
   document.getElementById('result').style.display='block';
 }
 
@@ -968,7 +950,7 @@ function renderHistory(){
     <div class="history-item" onclick="loadHistory(${i})">
       <span class="hist-ticker">${h.ticker}</span>
       <span class="hist-signal ${h.signal.toLowerCase()}">${h.signal}</span>
-      <span class="hist-info">Rp ${fmt(h.price)} · ${h.change_pct>=0?'+':''}${h.change_pct}% · ${h.confidence}% conf</span>
+      <span class="hist-info">Rp ${fmt(h.price)} <span style="font-weight:700;color:${h.change_pct>=0?'var(--buy)':'var(--sell)'}">(${h.change_pct>=0?'+':''}${h.change_pct}%)</span></span>
       <span class="hist-time">${h.time}</span>
     </div>`).join('');
 }
@@ -1008,44 +990,46 @@ function evaluateMyPortfolio(ticker, P, A) {
   let customVerdict = 'HOLD';
   let customReason = '';
   let vColor = 'var(--hold)';
-  let borderColor = 'rgba(255, 179, 0, 0.4)';
 
   if (currentPrice <= slClean) {
     customVerdict = 'CUT LOSS';
-    customReason = `Harga saat ini (Rp ${fmt(currentPrice)}) sudah menyentuh batas Stop Loss (Rp ${fmt(slClean)}). Segera batasi kerugian Anda untuk mengamankan sisa modal.`;
-    vColor = 'var(--sell)'; borderColor = 'rgba(255, 69, 96, 0.5)';
+    customReason = `Harga saat ini (Rp ${fmt(currentPrice)}) telah menembus batas toleransi Stop Loss (Rp ${fmt(slClean)}). Disarankan membatasi kerugian segera.`;
+    vColor = 'var(--sell)';
   } else if (currentPrice >= tpClean) {
     customVerdict = 'TAKE PROFIT';
-    customReason = `Selamat! Harga saat ini (Rp ${fmt(currentPrice)}) sudah mencapai/melewati Target AI (Rp ${fmt(tpClean)}). Waktunya merealisasikan keuntungan Anda.`;
-    vColor = 'var(--buy)'; borderColor = 'rgba(0, 230, 118, 0.5)';
+    customReason = `Target harga AI (Rp ${fmt(tpClean)}) telah tercapai. Pertimbangkan untuk merealisasikan keuntungan Anda.`;
+    vColor = 'var(--buy)';
   } else if (floatPct <= -5 && A.keputusan === 'BUY') {
     customVerdict = 'AVERAGE DOWN';
-    customReason = `Posisi Anda sedang Floating Loss ${floatPct.toFixed(1)}%, namun AI melihat momentum BUY. Ini kesempatan baik untuk menurunkan Harga Rata-rata (Avg) jika Anda memiliki dana cadangan.`;
-    vColor = 'var(--buy)'; borderColor = 'rgba(0, 230, 118, 0.5)';
+    customReason = `Posisi sedang Floating Loss ${floatPct.toFixed(1)}%, namun terdapat momentum teknikal/fundamental positif. Ini dapat dipertimbangkan sebagai area Average Down jika alokasi dana tersedia.`;
+    vColor = 'var(--buy)';
   } else if (floatPct >= 7 && A.keputusan === 'SELL') {
     customVerdict = 'TAKE PROFIT / TRAILING STOP';
-    customReason = `Anda sudah profit ${floatPct.toFixed(1)}%, namun AI mendeteksi sinyal SELL/Distribusi. Amankan profit Anda sebagian atau pasang Trailing Stop ketat.`;
-    vColor = 'var(--sell)'; borderColor = 'rgba(255, 69, 96, 0.5)';
+    customReason = `Terdapat keuntungan sebesar ${floatPct.toFixed(1)}%, namun AI mendeteksi adanya potensi distribusi. Pertimbangkan untuk merealisasikan sebagian keuntungan atau mengetatkan Trailing Stop.`;
+    vColor = 'var(--sell)';
   } else {
     customVerdict = A.keputusan;
-    customReason = `Posisi terpantau aman. Ikuti arahan utama AI: ${A.keputusan}. Jangan lupa pantau pergerakan sentimen dan bandarmologi.`;
-    if(A.keputusan === 'BUY') { vColor = 'var(--buy)'; borderColor = 'rgba(0, 230, 118, 0.5)'; }
-    if(A.keputusan === 'SELL') { vColor = 'var(--sell)'; borderColor = 'rgba(255, 69, 96, 0.5)'; }
+    customReason = `Posisi termonitor aman sesuai panduan algoritma saat ini (${A.keputusan}). Terus pantau pergerakan harga dan perhatikan area batasan.`;
+    if(A.keputusan === 'BUY') vColor = 'var(--buy)';
+    if(A.keputusan === 'SELL') vColor = 'var(--sell)';
   }
 
   const floatColor = floatRp >= 0 ? 'var(--buy)' : 'var(--sell)';
 
   const widgetHTML = `
-  <div class="my-portfolio-card" style="border-color:${borderColor}">
-    <div class="my-pf-title" style="color:${vColor}">// Analisa Portofolio Pribadi: ${ticker}</div>
-    <div class="my-pf-grid">
-      <div><div class="my-pf-label">Avg Price</div><div class="my-pf-val" style="color:var(--text)">Rp ${fmt(avgPrice)}</div></div>
-      <div><div class="my-pf-label">Floating P/L</div><div class="my-pf-val" style="color:${floatColor}">${floatRp >= 0 ? '+' : ''}${fmt(floatRp)}<br><span style="font-size:12px">(${floatPct >= 0 ? '+' : ''}${floatPct.toFixed(2)}%)</span></div></div>
-      <div><div class="my-pf-label">Total Equity</div><div class="my-pf-val" style="color:var(--text)">Rp ${fmt(totalEquity)}</div></div>
+  <div class="my-portfolio-card" style="border-left: 4px solid ${vColor}">
+    <div class="my-pf-title" style="color:${vColor}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      Ringkasan Portofolio Anda (${ticker})
     </div>
-    <div class="my-pf-verdict-box" style="border-left-color:${vColor}">
-      <div style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:800; color:${vColor}; margin-bottom:6px; letter-spacing:1px;">▸ ACTION: ${customVerdict}</div>
-      <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); line-height:1.6;">${customReason}</div>
+    <div class="my-pf-grid">
+      <div><div class="my-pf-label">Harga Beli (Avg)</div><div class="my-pf-val" style="color:var(--text)">Rp ${fmt(avgPrice)}</div></div>
+      <div><div class="my-pf-label">Total Floating P/L</div><div class="my-pf-val" style="color:${floatColor}">${floatRp >= 0 ? '+' : ''}${fmt(floatRp)} <span style="font-size:14px; font-weight:600;">(${floatPct >= 0 ? '+' : ''}${floatPct.toFixed(2)}%)</span></div></div>
+      <div><div class="my-pf-label">Nilai Ekuitas (Value)</div><div class="my-pf-val" style="color:var(--text)">Rp ${fmt(totalEquity)}</div></div>
+    </div>
+    <div class="my-pf-verdict-box" style="border-color:${vColor}">
+      <div style="font-size:14px; font-weight:700; color:${vColor}; margin-bottom:8px; text-transform:uppercase;">Rekomendasi Tindakan: ${customVerdict}</div>
+      <div style="font-size:13px; color:var(--text); line-height:1.6;">${customReason}</div>
     </div>
   </div>`;
 

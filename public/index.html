@@ -263,7 +263,7 @@ header{padding:32px 0 24px;border-bottom:1px solid var(--border);display:flex;al
       <span class="quick-tag" onclick="quickPick('UNVR')">UNVR</span>
       <span class="quick-tag" onclick="quickPick('BRIS')">BRIS</span>
     </div>
-    
+
     <div class="portfolio-inputs" style="margin-top:24px; padding-top:24px; border-top:1px solid var(--border);">
       <div class="search-label" style="color:var(--accent);">Data Portofolio Anda (Opsional)</div>
       <div style="display:flex; gap:16px; align-items:stretch; flex-wrap:wrap;">
@@ -311,8 +311,9 @@ let analysisHistory = [];
 function quickPick(t){document.getElementById('tickerInput').value=t;runAnalysis();}
 document.getElementById('tickerInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAnalysis();});
 
+const _stepIds = ['step1','step2','step3','step4','step5'];
 function setStep(n){
-  ['step1','step2','step3','step4','step5'].forEach((s,i)=>{
+  _stepIds.forEach((s,i)=>{
     const el=document.getElementById(s);
     if(!el)return;
     el.className='loading-step'+(i<n?' done':i===n?' active':'');
@@ -338,48 +339,45 @@ async function callGemini(prompt, useSearch=false, maxTok=8192){
 }
 
 function parseJSON(text){
-  let clean = text.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  // Strip semua markdown code fence (```json ... ``` atau ``` ... ```)
+  let clean = text.replace(/^```[a-z]*\r?\n?/im, '').replace(/\r?\n?```\s*$/im, '').trim();
   const start = clean.indexOf('{');
   const end   = clean.lastIndexOf('}');
   if(start === -1 || end === -1 || end <= start) throw new Error('Format respons tidak valid — tidak ditemukan JSON');
 
   let jsonStr = clean.slice(start, end + 1);
-  jsonStr = jsonStr.replace(/,\s*([\}\]])/g, '$1'); 
-  jsonStr = jsonStr.replace(/[\u0000-\u001F]+/g, ' '); 
-  try { 
-    return JSON.parse(jsonStr); 
-  } catch(e) { 
-    console.error("AI JSON Output:", jsonStr);
-    throw new Error('AI menghasilkan teks yang tidak wajar. Silakan klik Analisis ulang.'); 
+  jsonStr = jsonStr.replace(/,\s*([\}\]])/g, '$1');   // hapus trailing comma
+  jsonStr = jsonStr.replace(/[\u0000-\u001F\u007F]+/g, ' '); // strip control chars
+  try {
+    return JSON.parse(jsonStr);
+  } catch(e) {
+    console.error('AI JSON Output:', jsonStr);
+    throw new Error('AI menghasilkan teks yang tidak wajar. Silakan klik Analisis ulang.');
   }
 }
 
 async function fetchPrice(ticker) {
-  try {
-    const response = await fetch(`/api/price?ticker=${ticker}`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const response = await fetch(`/api/price?ticker=${ticker}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    const d = await response.json();
-    if (!d.found) throw new Error('Data saham tidak ditemukan');
+  const d = await response.json();
+  if (!d.found) throw new Error('Data saham tidak ditemukan');
 
-    return {
-      ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
-      open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
-      prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
-      sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
-      dps_from_chart: d.dps_from_chart || null,
-      last_updated: d.last_updated,
-      company_name: d.company_name,
-      sector: d.sector,
-      industry: d.industry,
-      rsi_14: d.rsi_14, ma_20: d.ma_20, ma_50: d.ma_50, support_30d: d.support_30d, resist_30d: d.resist_30d,
-      trend_ma: d.trend_ma, momentum_rsi: d.momentum_rsi,
-      eps_ttm: d.eps_ttm || null, pe_ratio_ttm: d.pe_ratio_ttm || null, pb_ratio_ttm: d.pb_ratio_ttm || null,
-      roe_ttm: d.roe_ttm || null, book_value: d.book_value || null, dividend_yield: d.dividend_yield || null
-    };
-  } catch(e) {
-    throw e;
-  }
+  return {
+    ticker: d.ticker, price: d.price, change: d.change, change_pct: d.change_pct,
+    open: d.open, high: d.high, low: d.low, volume: d.volume, avg_volume: d.avg_volume,
+    prev_close: d.prev_close, week52_high: d.week52_high, week52_low: d.week52_low,
+    sessions: d.sessions || [], avg_vol_30d: d.avg_vol_30d,
+    dps_from_chart: d.dps_from_chart || null,
+    last_updated: d.last_updated,
+    company_name: d.company_name,
+    sector: d.sector,
+    industry: d.industry,
+    rsi_14: d.rsi_14, ma_20: d.ma_20, ma_50: d.ma_50, support_30d: d.support_30d, resist_30d: d.resist_30d,
+    trend_ma: d.trend_ma, momentum_rsi: d.momentum_rsi,
+    eps_ttm: d.eps_ttm || null, pe_ratio_ttm: d.pe_ratio_ttm || null, pb_ratio_ttm: d.pb_ratio_ttm || null,
+    roe_ttm: d.roe_ttm || null, book_value: d.book_value || null, dividend_yield: d.dividend_yield || null
+  };
 }
 
 async function fetchAllAnalysis(ticker, p, dpsFromChart){
@@ -537,7 +535,6 @@ async function runAnalysis(){
   btn.disabled=true;
   document.getElementById('loading').style.display='block';
   document.getElementById('result').style.display='none';
-  setStep(0);
   try{
     setTxt('Mengambil Harga & Fundamental...','Integrasi Yahoo Finance API · '+ticker+'.JK');
     setStep(0);
@@ -670,7 +667,7 @@ function buildBandarHTML(p, bm){
   if(bm.unusual_vol_detected) alerts.push(`<div class="alert-box alert-anomaly">🔔 <strong>Anomali Volume:</strong> ${bm.unusual_vol_desc||'Pergerakan volume di luar kebiasaan.'}</div>`);
   if(bm.price_vol_divergence && bm.divergence_type && bm.divergence_type!=='none') alerts.push(`<div class="alert-box alert-divergence">⚡ <strong>Divergensi:</strong> ${bm.divergence_type==='bullish_divergence'?'Bullish (Harga turun, OBV naik - potensi reversal)':'Bearish (Harga naik, OBV turun - potensi koreksi)'}</div>`);
   if(bm.wyckoff_event && bm.wyckoff_desc) alerts.push(`<div class="alert-box alert-divergence" style="border-color:rgba(109,40,217,.3)">◈ <strong>Wyckoff Event (${bm.wyckoff_event}):</strong> ${bm.wyckoff_desc}</div>`);
-  
+
   const pvLabels = {'bullish_confirmation':'Validasi Bullish','bearish_confirmation':'Validasi Bearish','weak_rally':'Kenaikan Lemah','weak_decline':'Penurunan Normal'};
 
   const totalSig = bm.accumCount + bm.distribCount;
@@ -749,7 +746,7 @@ function renderResult(ticker,P,F,FV,BM,A){
         <div class="fv-method-formula">${m.formula}</div>
       </div>`;
     }).join('');
-    
+
     fvHTML=`
     <div class="card">
       <div class="card-header">
@@ -906,6 +903,7 @@ function renderResult(ticker,P,F,FV,BM,A){
   const el=document.getElementById('result');
   el.innerHTML=html;
   el.style.display='block';
+  maybeEvaluatePortfolio(ticker, P, A);
 
   setTimeout(()=>{
     const cb=document.getElementById('confBar');if(cb)cb.style.width=A.confidence+'%';
@@ -961,11 +959,10 @@ function loadHistory(i){
 }
 
 // ── Widget Portofolio Pribadi ──
-const _originalRenderResult = renderResult;
-renderResult = function(ticker, P, F, FV, BM, A) {
-  _originalRenderResult(ticker, P, F, FV, BM, A);
+// Dipanggil dari dalam renderResult setelah render selesai
+function maybeEvaluatePortfolio(ticker, P, A) {
   evaluateMyPortfolio(ticker, P, A);
-};
+}
 
 function evaluateMyPortfolio(ticker, P, A) {
   const avgInput = document.getElementById('myAvgPrice').value;
@@ -984,8 +981,17 @@ function evaluateMyPortfolio(ticker, P, A) {
   const floatRp = totalEquity - totalModal;
   const floatPct = (floatRp / totalModal) * 100;
 
-  const tpClean = A.target_harga ? parseFloat(A.target_harga.replace(/[^0-9]/g, '')) : currentPrice * 1.1;
-  const slClean = A.stop_loss ? parseFloat(A.stop_loss.replace(/[^0-9]/g, '')) : currentPrice * 0.9;
+  // Ekstrak angka dari string seperti "Rp 1.250" atau "1250" — pertahankan desimal
+  const parseRpString = (str, fallback) => {
+    if (!str) return fallback;
+    // Hapus prefix Rp/non-numerik kecuali titik, koma, dan minus
+    const cleaned = String(str).replace(/[Rp\s]/gi, '').replace(/\./g, '').replace(',', '.');
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? fallback : n;
+  };
+
+  const tpClean = parseRpString(A.target_harga, currentPrice * 1.1);
+  const slClean = parseRpString(A.stop_loss,    currentPrice * 0.9);
 
   let customVerdict = 'HOLD';
   let customReason = '';
@@ -1033,11 +1039,9 @@ function evaluateMyPortfolio(ticker, P, A) {
     </div>
   </div>`;
 
-  setTimeout(() => {
-    const resultDiv = document.getElementById('result');
-    const metricsGrid = resultDiv.querySelector('.metrics-grid');
-    if (metricsGrid) metricsGrid.insertAdjacentHTML('afterend', widgetHTML);
-  }, 50); 
+  const resultDiv = document.getElementById('result');
+  const metricsGrid = resultDiv.querySelector('.metrics-grid');
+  if (metricsGrid) metricsGrid.insertAdjacentHTML('afterend', widgetHTML);
 }
 </script>
 </body>
